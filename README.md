@@ -15,4 +15,4 @@
 
 2. Build the project: `make build`
 
-3. Run the resulting executable: `./build/monitor`
+3. Run the resulting executable: `./build/"executable name"`
