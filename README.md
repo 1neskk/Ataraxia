@@ -1,4 +1,4 @@
-# template
+# CUDARayTracer
 
 ## Get Started
 
