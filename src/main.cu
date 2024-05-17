@@ -1,8 +1,9 @@
 #include <cuda_runtime.h>
 
 #include <iostream>
-#include <limits>
-#include <algorithm>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 #include "../thirdparty/glm/glm/glm.hpp"
 #include "../thirdparty/glm/glm/gtc/matrix_transform.hpp"
@@ -25,11 +26,11 @@ struct Sphere
 
 __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 {
-    glm::vec3 oc = ray.origin - sphere.center; // vector from sphere center to ray origin
-    float a = glm::dot(ray.direction, ray.direction);
-    float b = 2.0f * glm::dot(oc, ray.direction);
-    float c = glm::dot(oc, oc) - sphere.radius * sphere.radius;
-    float discriminant = b * b - 4.0f * a * c;
+    const glm::vec3 oc = ray.origin - sphere.center; // vector from sphere center to ray origin
+    const float a = glm::dot(ray.direction, ray.direction);
+    const float b = 2.0f * glm::dot(oc, ray.direction);
+    const float c = glm::dot(oc, oc) - sphere.radius * sphere.radius;
+    const float discriminant = b * b - 4.0f * a * c;
 
     if (discriminant < 0.0f)
     {
@@ -37,8 +38,8 @@ __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
     }
     else
     {
-        float t1 = (-b - sqrt(discriminant)) / (2.0f * a);
-        float t2 = (-b + sqrt(discriminant)) / (2.0f * a);
+        const float t1 = (-b - sqrt(discriminant)) / (2.0f * a);
+        const float t2 = (-b + sqrt(discriminant)) / (2.0f * a);
 
         if (t1 > 0.0f)
         {
@@ -58,16 +59,16 @@ __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 __global__ void renderKernel(glm::vec3* image, int width, int height, Sphere* spheres, int numSpheres,
         glm::vec3 camPos, glm::vec3 camDir, glm::vec3 camUp, float fov)
 {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
+	int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height)
         return;
 
     int idx = y * width + x;
-    float aspect_ratio = float(width) / float(height);
+    float aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
     float scale = tan(fov * 0.5f * M_PI / 180.0f);
-    float u = (2.0f * (x + 0.5f) / float(width) - 1.0f) * aspect_ratio * scale;
-    float v = (1.0f - 2.0f * (y + 0.5f) / float(height)) * scale;
+    float u = (2.0f * (x + 0.5f) / static_cast<float>(width) - 1.0f) * aspect_ratio * scale;
+    float v = (1.0f - 2.0f * (y + 0.5f) / static_cast<float>(height)) * scale;
 
     glm::vec3 ray_origin = camPos;
     glm::vec3 ray_direction = glm::normalize(u * glm::normalize(glm::cross(camDir, camUp)) + v * camUp + camDir);
@@ -100,11 +101,11 @@ __global__ void renderKernel(glm::vec3* image, int width, int height, Sphere* sp
 
 int main()
 {
-    int width = 800;
-    int height = 600;
-    size_t imageSize = width * height * sizeof(glm::vec3);
+    constexpr int width = 800;
+    constexpr int height = 600;
+    constexpr size_t imageSize = width * height * sizeof(glm::vec3);
 
-    glm::vec3* h_image = (glm::vec3*)malloc(imageSize);
+    auto* h_image = static_cast<glm::vec3*>(malloc(imageSize));
     glm::vec3* d_image;
     cudaMalloc((void**)&d_image, imageSize);
 
@@ -117,10 +118,10 @@ int main()
     cudaMemcpy(d_spheres, h_spheres, sizeof(h_spheres), cudaMemcpyHostToDevice);
     
     // Camera params
-    glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 camDir = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f));
-    glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    float fov = 90.0f;
+    const glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    const glm::vec3 camDir = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f));
+    const glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    constexpr float fov = 90.0f;
 
     // Debugging: Print out the sphere and camera data
     std::cout << "Sphere center: " << h_spheres[0].center.x << ", " << h_spheres[0].center.y << ", " << h_spheres[0].center.z << std::endl;
@@ -143,21 +144,21 @@ int main()
     {
         for (int x = 0; x < width; x++)
         {
-            int idx = y * width + x;
-            glm::vec3 color = h_image[idx];
+            const int idx = y * width + x;
+            const glm::vec3 color = h_image[idx];
             if (color.r > 0.0f)
                 hitCount++;
         }
     }
     std::cout << "Number of hits: " << hitCount << std::endl;
 
-    unsigned char* image_data = (unsigned char*)malloc(width * height * 4);
+    const auto image_data = static_cast<unsigned char*>(malloc(width * height * 4));
     for (int y = 0; y < height; y++)
     {
         for (int x = 0; x < width; x++)
         {
-            int idx = y * width + x;
-            glm::vec3 color = h_image[idx];
+            const int idx = y * width + x;
+            const glm::vec3 color = h_image[idx];
             image_data[4 * idx + 0] = static_cast<unsigned char>(color.r * 255.0f);
             image_data[4 * idx + 1] = static_cast<unsigned char>(color.g * 255.0f);
             image_data[4 * idx + 2] = static_cast<unsigned char>(color.b * 255.0f);
