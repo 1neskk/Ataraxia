@@ -1,0 +1,7 @@
+[submodule "glm"]
+	path = thirdparty/glm
+	url = git@github.com:g-truc/glm.git
+
+[submodule "stb"]
+	path = thirdparty/stb
+	url = git@github.com:nothings/stb.git
