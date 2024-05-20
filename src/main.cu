@@ -72,10 +72,11 @@ __global__ void renderKernel(Vec3* image, int width, int height)
         return;
 
     int idx = y * width + x;
-    float u = static_cast<float>(x) / static_cast<float>(width);
-    float v = static_cast<float>(y) / static_cast<float>(height);
+    float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    float u = (static_cast<float>(x) / static_cast<float>(width)) * 2.0f - 1.0f;
+    float v = (static_cast<float>(y) / static_cast<float>(height)) * 2.0f - 1.0f;
 
-    Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(2.0f * u - 1.0f, 2.0f * v - 1.0f, -1.0f).normalize() };
+    Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(u * aspectRatio, v, -1.0f).normalize() };
     Sphere sphere = { Vec3(0.0f, 0.0f, -3.0f), 1.0f };
 
     float t = INFINITY;
