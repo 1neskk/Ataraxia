@@ -11,23 +11,25 @@ struct Vec3
 {
 	float x, y, z;
 	__host__ __device__ Vec3() : x(0.0f), y(0.0f), z(0.0f) {}
-	__host__ __device__ Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+	__host__ __device__ Vec3(const float x, const float y, const float z) : x(x), y(y), z(z) {}
 
-	__host__ __device__ Vec3 operator+(const Vec3& v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
-	__host__ __device__ Vec3 operator-(const Vec3& v) const { return Vec3(x - v.x, y - v.y, z - v.z); }
-	__host__ __device__ Vec3 operator*(float s) const { return Vec3(x * s, y * s, z * s); }
-	__host__ __device__ Vec3 operator/(float s) const { return Vec3(x / s, y / s, z / s); }
+    __host__ __device__ Vec3 operator+(const Vec3& v) const { return { x + v.x, y + v.y, z + v.z }; }
+    __host__ __device__ Vec3 operator-(const Vec3& v) const { return { x - v.x, y - v.y, z - v.z }; }
+    __host__ __device__ Vec3 operator*(const float s) const { return { x * s, y * s, z * s }; }
+    __host__ __device__ Vec3 operator/(const float s) const { return { x / s, y / s, z / s }; }
 
     // scalar
-    __host__ __device__ Vec3 operator*(const Vec3& v) const { return Vec3(x * v.x, y * v.y, z * v.z); }
-    __host__ __device__ Vec3 operator/(const Vec3& v) const { return Vec3(x / v.x, y / v.y, z / v.z); }
+    __host__ __device__ Vec3 operator*(const Vec3& v) const { return { x * v.x, y * v.y, z * v.z }; }
+    __host__ __device__ Vec3 operator/(const Vec3& v) const { return { x / v.x, y / v.y, z / v.z }; }
 
 	__host__ __device__ float length() const { return sqrtf(x * x + y * y + z * z); }
 	__host__ __device__ Vec3 normalize() const { return *this / length(); }
 	__host__ __device__ static float dot(const Vec3& a, const Vec3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
 	
 	__host__ __device__ static Vec3 cross(const Vec3& a, const Vec3& b)
-	{ return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
+    {
+        return { a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x };
+    }
 
 };
 
@@ -73,11 +75,11 @@ __global__ void renderKernel(Vec3* image, int width, int height)
 
     int idx = y * width + x;
     float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-    float u = (static_cast<float>(x) / static_cast<float>(width)) * 2.0f - 1.0f;
-    float v = (static_cast<float>(y) / static_cast<float>(height)) * 2.0f - 1.0f;
+	float u = (static_cast<float>(x) / static_cast<float>(width)) * 2.0f - 1.0f;
+    const float v = (static_cast<float>(y) / static_cast<float>(height)) * 2.0f - 1.0f;
 
-    Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(u * aspectRatio, v, -1.0f).normalize() };
-    Sphere sphere = { Vec3(0.0f, 0.0f, -3.0f), 1.0f };
+    const Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(u * aspectRatio, v, -1.0f).normalize() };
+    const Sphere sphere = { Vec3(0.0f, 0.0f, -3.0f), 1.0f };
 
     float t = INFINITY;
     if (intersect(ray, sphere, t))
@@ -98,23 +100,23 @@ int main()
 
     auto* h_image = static_cast<Vec3*>(malloc(imageSize));
     Vec3* d_image;
-    cudaMalloc((void**)&d_image, imageSize);
+    cudaMalloc(reinterpret_cast<void**>(&d_image), imageSize);
 
     Sphere h_spheres[1];
     h_spheres[0].center = Vec3(0.0f, 0.0f, 0.0f);
     h_spheres[0].radius = 1.0f;
 
     Sphere* d_spheres;
-    cudaMalloc((void**)&d_spheres, sizeof(h_spheres));
+    cudaMalloc(reinterpret_cast<void**>(&d_spheres), sizeof(h_spheres));
     cudaMemcpy(d_spheres, h_spheres, sizeof(h_spheres), cudaMemcpyHostToDevice);
 
     // Debugging: Print out the sphere data
     std::cout << "Sphere center: " << h_spheres[0].center.x << ", " << h_spheres[0].center.y << ", " << h_spheres[0].center.z << std::endl;
     std::cout << "Sphere radius: " << h_spheres[0].radius << std::endl;
 
-    dim3 blockSize(16, 16);
-    dim3 gridSize((width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y);
-    renderKernel<<<gridSize, blockSize>>>(d_image, width, height);
+    dim3 blocks(16, 16);
+    dim3 grids((width + blocks.x - 1) / blocks.x, (height + blocks.y - 1) / blocks.y);
+    renderKernel<<<grids, blocks >>>(d_image, width, height);
 
     cudaMemcpy(h_image, d_image, imageSize, cudaMemcpyDeviceToHost);
 
