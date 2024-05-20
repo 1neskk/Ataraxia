@@ -1,63 +1,70 @@
 #include <cuda_runtime.h>
-
 #include <iostream>
 
 #define _USE_MATH_DEFINES
 #include <cmath>
 
-#include "../thirdparty/glm/glm/glm.hpp"
-#include "../thirdparty/glm/glm/gtc/matrix_transform.hpp"
-#include "../thirdparty/glm/glm/gtc/type_ptr.hpp"
-
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../thirdparty/stb/stb_image_write.h"
 
+struct Vec3
+{
+	float x, y, z;
+	__host__ __device__ Vec3() : x(0.0f), y(0.0f), z(0.0f) {}
+	__host__ __device__ Vec3(float x, float y, float z) : x(x), y(y), z(z) {}
+
+	__host__ __device__ Vec3 operator+(const Vec3& v) const { return Vec3(x + v.x, y + v.y, z + v.z); }
+	__host__ __device__ Vec3 operator-(const Vec3& v) const { return Vec3(x - v.x, y - v.y, z - v.z); }
+	__host__ __device__ Vec3 operator*(float s) const { return Vec3(x * s, y * s, z * s); }
+	__host__ __device__ Vec3 operator/(float s) const { return Vec3(x / s, y / s, z / s); }
+
+    // scalar
+    __host__ __device__ Vec3 operator*(const Vec3& v) const { return Vec3(x * v.x, y * v.y, z * v.z); }
+    __host__ __device__ Vec3 operator/(const Vec3& v) const { return Vec3(x / v.x, y / v.y, z / v.z); }
+
+	__host__ __device__ float length() const { return sqrtf(x * x + y * y + z * z); }
+	__host__ __device__ Vec3 normalize() const { return *this / length(); }
+	__host__ __device__ static float dot(const Vec3& a, const Vec3& b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+	
+	__host__ __device__ static Vec3 cross(const Vec3& a, const Vec3& b)
+	{ return Vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x); }
+
+};
+
 struct Ray
 {
-    glm::vec3 origin;
-    glm::vec3 direction;
+    Vec3 origin;
+    Vec3 direction;
 };
 
 struct Sphere
 {
-    glm::vec3 center;
+    Vec3 center;
     float radius;
 };
 
 __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 {
-    const glm::vec3 oc = ray.origin - sphere.center; // vector from sphere center to ray origin
-    const float a = glm::dot(ray.direction, ray.direction);
-    const float b = 2.0f * glm::dot(oc, ray.direction);
-    const float c = glm::dot(oc, oc) - sphere.radius * sphere.radius;
+    const Vec3 oc = ray.origin - sphere.center;
+    const float a = Vec3::dot(ray.direction, ray.direction);
+    const float b = 2.0f * Vec3::dot(oc, ray.direction);
+    const float c = Vec3::dot(oc, oc) - sphere.radius * sphere.radius;
     const float discriminant = b * b - 4.0f * a * c;
 
     if (discriminant < 0.0f)
     {
-        return false;
+        t = (-b + sqrtf(discriminant)) / (2.0f * a);
+        return t >= 0.0f;
     }
     else
     {
-        const float t1 = (-b - sqrt(discriminant)) / (2.0f * a);
-        const float t2 = (-b + sqrt(discriminant)) / (2.0f * a);
-
-        if (t1 > 0.0f)
-        {
-            t = t1;
-            return true;
-        }
-        else if (t2 > 0.0f)
-        {
-            t = t2;
-            return true;
-        }
-        return false;
+        t = (-b - sqrtf(discriminant)) / (2.0f * a);
+        return t > 0.0f;
     }
 }
 
 // CUDA kernel
-__global__ void renderKernel(glm::vec3* image, int width, int height, Sphere* spheres, int numSpheres,
-        glm::vec3 camPos, glm::vec3 camDir, glm::vec3 camUp, float fov)
+__global__ void renderKernel(Vec3* image, int width, int height)
 {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -65,76 +72,48 @@ __global__ void renderKernel(glm::vec3* image, int width, int height, Sphere* sp
         return;
 
     int idx = y * width + x;
-    float aspect_ratio = static_cast<float>(width) / static_cast<float>(height);
-    float scale = tan(fov * 0.5f * M_PI / 180.0f);
-    float u = (2.0f * (x + 0.5f) / static_cast<float>(width) - 1.0f) * aspect_ratio * scale;
-    float v = (1.0f - 2.0f * (y + 0.5f) / static_cast<float>(height)) * scale;
+    float u = static_cast<float>(x) / static_cast<float>(width);
+    float v = static_cast<float>(y) / static_cast<float>(height);
 
-    glm::vec3 ray_origin = camPos;
-    glm::vec3 ray_direction = glm::normalize(u * glm::normalize(glm::cross(camDir, camUp)) + v * camUp + camDir);
+    Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(2.0f * u - 1.0f, 2.0f * v - 1.0f, -1.0f).normalize() };
+    Sphere sphere = { Vec3(0.0f, 0.0f, -3.0f), 1.0f };
 
-    Ray ray;
-    ray.origin = ray_origin;
-    ray.direction = ray_direction;
-
-    float t;
-    bool hit = false;
-
-    for (int i = 0; i < numSpheres; i++)
+    float t = INFINITY;
+    if (intersect(ray, sphere, t))
     {
-        if (intersect(ray, spheres[i], t))
-        {
-            hit = true;
-            break;
-        }
-    }
-
-    if (hit)
-    {
-        image[idx] = glm::vec3(1.0f, 0.0f, 0.0f);
+        image[idx] = Vec3(1.0f, 0.0f, 0.0f);
     }
     else
     {
-        image[idx] = glm::vec3(0.0f, 0.0f, 0.0f);
+        image[idx] = Vec3(0.0f, 0.0f, 0.0f);
     }
 }
 
 int main()
 {
-    constexpr int width = 800;
-    constexpr int height = 600;
-    constexpr size_t imageSize = width * height * sizeof(glm::vec3);
+    constexpr int width = 1200;
+    constexpr int height = 800;
+    constexpr size_t imageSize = width * height * sizeof(Vec3);
 
-    auto* h_image = static_cast<glm::vec3*>(malloc(imageSize));
-    glm::vec3* d_image;
+    auto* h_image = static_cast<Vec3*>(malloc(imageSize));
+    Vec3* d_image;
     cudaMalloc((void**)&d_image, imageSize);
 
     Sphere h_spheres[1];
-    h_spheres[0].center = glm::vec3(0.0f, 0.0f, -5.0f);
+    h_spheres[0].center = Vec3(0.0f, 0.0f, 0.0f);
     h_spheres[0].radius = 1.0f;
 
     Sphere* d_spheres;
     cudaMalloc((void**)&d_spheres, sizeof(h_spheres));
     cudaMemcpy(d_spheres, h_spheres, sizeof(h_spheres), cudaMemcpyHostToDevice);
-    
-    // Camera params
-    const glm::vec3 camPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    const glm::vec3 camDir = glm::normalize(glm::vec3(0.0f, 0.0f, -1.0f));
-    const glm::vec3 camUp = glm::vec3(0.0f, 1.0f, 0.0f);
-    constexpr float fov = 90.0f;
 
-    // Debugging: Print out the sphere and camera data
+    // Debugging: Print out the sphere data
     std::cout << "Sphere center: " << h_spheres[0].center.x << ", " << h_spheres[0].center.y << ", " << h_spheres[0].center.z << std::endl;
     std::cout << "Sphere radius: " << h_spheres[0].radius << std::endl;
 
-    std::cout << "Camera position: " << camPos.x << ", " << camPos.y << ", " << camPos.z << std::endl;
-    std::cout << "Camera direction: " << camDir.x << ", " << camDir.y << ", " << camDir.z << std::endl;
-    std::cout << "Camera up: " << camUp.x << ", " << camUp.y << ", " << camUp.z << std::endl;
-    std::cout << "Field of view: " << fov << std::endl;
-
     dim3 blockSize(16, 16);
     dim3 gridSize((width + blockSize.x - 1) / blockSize.x, (height + blockSize.y - 1) / blockSize.y);
-    renderKernel<<<gridSize, blockSize>>>(d_image, width, height, d_spheres, 1, camPos, camDir, camUp, fov);
+    renderKernel<<<gridSize, blockSize>>>(d_image, width, height);
 
     cudaMemcpy(h_image, d_image, imageSize, cudaMemcpyDeviceToHost);
 
@@ -145,8 +124,8 @@ int main()
         for (int x = 0; x < width; x++)
         {
             const int idx = y * width + x;
-            const glm::vec3 color = h_image[idx];
-            if (color.r > 0.0f)
+            const Vec3 color = h_image[idx];
+            if (color.x > 0.0f)
                 hitCount++;
         }
     }
@@ -158,10 +137,10 @@ int main()
         for (int x = 0; x < width; x++)
         {
             const int idx = y * width + x;
-            const glm::vec3 color = h_image[idx];
-            image_data[4 * idx + 0] = static_cast<unsigned char>(color.r * 255.0f);
-            image_data[4 * idx + 1] = static_cast<unsigned char>(color.g * 255.0f);
-            image_data[4 * idx + 2] = static_cast<unsigned char>(color.b * 255.0f);
+            const Vec3 color = h_image[idx];
+            image_data[4 * idx + 0] = static_cast<unsigned char>(color.x * 255.0f);
+            image_data[4 * idx + 1] = static_cast<unsigned char>(color.y * 255.0f);
+            image_data[4 * idx + 2] = static_cast<unsigned char>(color.z * 255.0f);
             image_data[4 * idx + 3] = 255; // Alpha
         }
     }
