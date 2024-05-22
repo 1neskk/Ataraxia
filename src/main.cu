@@ -3,9 +3,9 @@
 __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 {
     const Vec3 oc = ray.origin - sphere.center;
-    const float a = Vec3::dot(ray.direction, ray.direction);
-    const float b = 2.0f * Vec3::dot(oc, ray.direction);
-    const float c = Vec3::dot(oc, oc) - sphere.radius * sphere.radius;
+    const float a = ray.direction.dot(ray.direction);
+    const float b = 2.0f * oc.dot(ray.direction);
+    const float c = oc.dot(oc) - sphere.radius * sphere.radius;
     const float discriminant = b * b - 4.0f * a * c;
 
     if (discriminant < 0.0f)
@@ -21,7 +21,7 @@ __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 }
 
 // CUDA kernel
-__global__ void renderKernel(Vec3* image, int width, int height)
+__global__ void renderKernel(Vec3* image, int width, int height, const Sphere* spheres, int numSpheres)
 {
 	int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -34,16 +34,18 @@ __global__ void renderKernel(Vec3* image, int width, int height)
     const float v = (static_cast<float>(y) / static_cast<float>(height)) * 2.0f - 1.0f;
 
     const Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(u * aspectRatio, v, -1.0f).normalize() };
-    const Sphere sphere = { Vec3(0.0f, 0.0f, -3.0f), 1.0f };
 
     float t = INFINITY;
-    if (intersect(ray, sphere, t))
+    for (int i = 0; i < numSpheres; i++)
     {
-        image[idx] = Vec3(1.0f, 0.0f, 0.0f);
-    }
-    else
-    {
-        image[idx] = Vec3(0.0f, 0.0f, 0.0f);
+        if (intersect(ray, spheres[i], t))
+        {
+            image[idx] = Vec3(1.0f, 0.0f, 0.0f);
+        }
+        else
+        {
+            image[idx] = Vec3(0.0f, 0.0f, 0.0f);
+        }
     }
 }
 
@@ -58,7 +60,7 @@ int main()
     cudaMalloc(reinterpret_cast<void**>(&d_image), imageSize);
 
     Sphere h_spheres[1];
-    h_spheres[0].center = Vec3(0.0f, 0.0f, 0.0f);
+    h_spheres[0].center = Vec3(0.0f, 0.0f, -3.0f);
     h_spheres[0].radius = 1.0f;
 
     Sphere* d_spheres;
@@ -71,7 +73,7 @@ int main()
 
     dim3 blocks(16, 16);
     dim3 grids((width + blocks.x - 1) / blocks.x, (height + blocks.y - 1) / blocks.y);
-    renderKernel<<<grids, blocks >>>(d_image, width, height);
+    renderKernel<<<grids, blocks >>>(d_image, width, height, d_spheres, 1);
 
     cudaMemcpy(h_image, d_image, imageSize, cudaMemcpyDeviceToHost);
 
