@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-project(CUDArt CUDA CXX)
+project(CUDARayTracer CUDA CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CUDA_TOOLKIT_ROOT_DIR /opt/cuda)
