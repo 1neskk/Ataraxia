@@ -8,7 +8,7 @@
 
 2. Build the project: `make build`
 
-3. Run the resulting executable: `./build/"CUDARayTracer"`
+3. Run the resulting executable: `./build/CUDARayTracer`
 
 ### Windows
 
