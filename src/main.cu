@@ -17,7 +17,6 @@ __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
         const float sqrtDiscriminant = sqrtf(discriminant);
         const float t1 = (-b - sqrtDiscriminant) / (2.0f * a);
         const float t2 = (-b + sqrtDiscriminant) / (2.0f * a);
-        
         if (t1 > 0.0f)
         {
             t = t1;
@@ -35,7 +34,7 @@ __device__ bool intersect(const Ray& ray, const Sphere& sphere, float& t)
 // CUDA kernel
 __global__ void renderKernel(Vec3* image, int width, int height, const Sphere* spheres, int numSpheres)
 {
-	int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (x >= width || y >= height)
         return;
@@ -46,7 +45,7 @@ __global__ void renderKernel(Vec3* image, int width, int height, const Sphere* s
     float u = ((2.0f * (x + 0.5f) / static_cast<float>(width)) - 1.0f) * aspectRatio * fov;
     float v = (1.0f - 2.0f * (y + 0.5f) / static_cast<float>(height)) * fov;
 
-    const Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(u, v, -1.0f).normalize() }; 
+    const Ray ray = { Vec3(0.0f, 0.0f, 0.0f), Vec3(u, v, -1.0f).normalize() };
 
     float t = INFINITY;
     Vec3 color = Vec3(0.0f, 0.0f, 0.0f);
@@ -54,7 +53,9 @@ __global__ void renderKernel(Vec3* image, int width, int height, const Sphere* s
     {
         if (intersect(ray, spheres[i], t))
         {
-            color = Vec3(1.0f, 0.0f, 0.0f);
+            Vec3 hitPoint = ray.origin + ray.direction * t;
+            Vec3 normal = (hitPoint - spheres[i].center).normalize();
+            color = (normal + Vec3(1.0f, 1.0f, 1.0f)) * 0.5f;
             break;
         }
     }
