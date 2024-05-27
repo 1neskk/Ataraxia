@@ -7,10 +7,10 @@
   url = https://github.com/nothings/stb
 
 [submodule "thirdparty/glfw"]
-  path = thirdparty/glfw
-  url = https://github.com/glfw/glfw
+	path = thirdparty/glfw
+	url = https://github.com/glfw/glfw
 
 [submodule "thirdparty/imgui"]
-  path = thirdparty/imgui
-  url = https://github.com/ocornut/imgui
-  branch = docking
+	path = thirdparty/imgui
+	url = https://github.com/ocornut/imgui
+	branch = docking
