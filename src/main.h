@@ -15,10 +15,21 @@ int Main(int argc, char** argv)
     return 0;
 }
 
+#ifdef _WIN32
+
+int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{
+    return Main(0, nullptr);
+}
+
+#else
+
 int main(int argc, char** argv)
 {
     return Main(argc, argv);
 }
+
+#endif
 
 namespace Style
 {

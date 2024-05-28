@@ -5,36 +5,31 @@
 class ExampleApp final : public Layer
 {
 public:
-    ExampleApp()
-    {
-
-    }
-
-    virtual void onUpdate() override
-    {
-
-    }
-
     virtual void onImGuiRender() override
     {
-        ImGui::CreateContext();
-        const ImGuiIO& io = ImGui::GetIO();
-        Style::theme();
-
-        ImGui::Begin("test");
-        ImGui::Text("Hello, world!");
+        ImGui::Begin("Example");
+        ImGui::Button("Hello, World!");
         ImGui::End();
-    }
 
-private:
+        //ImGui::ShowDemoWindow();
+    }
 };
 
 Application* createApplication(int argc, char** argv)
 {
     Specs spec;
-    spec.name = "CUDA";
+    spec.name = "App";
 
     auto app = new Application(spec);
     app->pushLayer<ExampleApp>();
+    // app->setMenubarCallback([app]()
+    // {
+    //     if (ImGui::BeginMenu("File"))
+    //     {
+    //         if (ImGui::MenuItem("Exit"))
+    //             app->close();
+    //         ImGui::EndMenu();
+    //     }
+    // });
     return app;
 }

@@ -14,7 +14,7 @@ public:
 
     virtual void onAttach() {}
     virtual void onDetach() {}
-    virtual void onUpdate() {}
+    virtual void onUpdate(float ts) {}
     virtual void onImGuiRender() {}
 };
 

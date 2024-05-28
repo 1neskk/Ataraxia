@@ -45,20 +45,14 @@ Application& Application::get()
 
 void Application::init()
 {
+    glfwSetErrorCallback(glfwErrorCallback);
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW" << std::endl;
-        exit(EXIT_FAILURE);
+        return;
     }
 
-    glfwSetErrorCallback(glfwErrorCallback);
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
     if (!m_window)
     {
@@ -66,13 +60,19 @@ void Application::init()
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-
-#ifndef _GLFW_WAYLAND
-    glfwSetWindowPos(m_window, 100, 100);
-#endif
+    
+    if (!getenv("WAYLAND_DISPLAY"))
+    {
+        glfwSetWindowPos(m_window, 100, 100);
+    }
 
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);
+
+    int w, h;
+    glfwGetFramebufferSize(m_window, &w, &h);
+
+    s_ResourceFreeQueue.resize(2);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -97,16 +97,6 @@ void Application::init()
     fontConfig.FontDataOwnedByAtlas = false;
     ImFont* robotoFont = io.Fonts->AddFontFromMemoryTTF((void*)g_RobotoRegular, sizeof(g_RobotoRegular), 18.0f, &fontConfig);
     io.FontDefault = robotoFont;
-
-    // glEnable(GL_DEBUG_OUTPUT);
-    // glDebugMessageCallback([](GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-    //     {
-    //         if (severity != GL_DEBUG_SEVERITY_NOTIFICATION)
-    //         {
-    //             std::cerr << message << std::endl;
-    //         }
-    //     }, nullptr);
-
 }
 
 void Application::shutdown()
@@ -131,38 +121,92 @@ void Application::shutdown()
 
 void Application::run()
 {
-    while (!glfwWindowShouldClose(m_window))
-    {
-        float time = getTime();
-        m_frameTime = time - m_lastFrameTime;
-        m_lastFrameTime = time;
-        m_timeStep = std::min(m_frameTime, 0.0333f);
+    m_running = true;
+    
+    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    ImGuiIO& io = ImGui::GetIO();
 
-        glClear(GL_COLOR_BUFFER_BIT);
+    while (!glfwWindowShouldClose(m_window) && m_running)
+    {
+        glfwPollEvents();
 
         for (auto& layer : m_layers)
-            layer->onUpdate();
+            layer->onUpdate(m_timeStep);
 
         ImGui_ImplOpenGL2_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        for (auto& layer : m_layers)
-            layer->onImGuiRender();
+        {
+            static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDocking;
+            if (m_menubarCallback)
+                window_flags |= ImGuiWindowFlags_MenuBar;
+
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->Pos);
+            ImGui::SetNextWindowSize(viewport->Size);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
+            if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+                window_flags |= ImGuiWindowFlags_NoBackground;
+
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+            ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+            ImGui::PopStyleVar();
+
+            ImGui::PopStyleVar(2);
+
+            if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+            {
+                ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+                ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+            }
+
+            if (m_menubarCallback)
+            {
+                if (ImGui::BeginMenuBar())
+                {
+                    m_menubarCallback();
+                    ImGui::EndMenuBar();
+                }
+            }
+
+            for (auto& layer : m_layers)
+                layer->onImGuiRender();
+
+            ImGui::End();
+        }
 
         ImGui::Render();
-        ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
-
-        if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        ImDrawData* draw_data = ImGui::GetDrawData();
+        const bool isMinimized = draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f;
+        if (!isMinimized)
         {
-            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            glViewport(0, 0, static_cast<int>(draw_data->DisplaySize.x), static_cast<int>(draw_data->DisplaySize.y));
+            glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+            glClear(GL_COLOR_BUFFER_BIT);
+            ImGui_ImplOpenGL2_RenderDrawData(draw_data);
+        }
+
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+        {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
+            glfwMakeContextCurrent(m_window);
         }
 
         glfwSwapBuffers(m_window);
-        glfwPollEvents();
+
+        float time = getTime();
+        m_frameTime = time - m_lastFrameTime;
+        m_timeStep = std::min(m_frameTime, 0.0333f);
+        m_lastFrameTime = time;
     }
 }
 
