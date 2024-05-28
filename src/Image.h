@@ -18,14 +18,14 @@ public:
     Image(uint32_t width, uint32_t height, ImageType type, const void* data = nullptr);
     ~Image();
 
-    void setData(const void* data);
+    void setData(const void* data) const;
 
     void resize(uint32_t width, uint32_t height);
 
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
+	[[nodiscard]] uint32_t getWidth() const { return m_width; }
+    [[nodiscard]] uint32_t getHeight() const { return m_height; }
 
-    ImageType getType() const { return m_type; }
+    [[nodiscard]] ImageType getType() const { return m_type; }
 
 
 private:

@@ -23,13 +23,13 @@ struct GLFWwindow;
 struct Specs
 {
     std::string name = "Application";
-    const uint32_t width = 1280, height = 720;
+	uint32_t width = 1280, height = 720;
 };
 
 class Application
 {
 public:
-    Application(const Specs& specs = Specs());
+    Application(Specs specs = Specs());
     ~Application();
 
     static Application& get();
@@ -51,9 +51,9 @@ public:
     }
 
     void close();
-    float getTime();
+    static float getTime();
 
-    GLFWwindow* getWindow() const { return m_window; }
+    [[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
 
     
     static void submitResourceFree(std::function<void()>&& func);

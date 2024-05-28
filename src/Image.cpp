@@ -10,7 +10,7 @@
 
 namespace Utils
 {
-    static uint32_t bytesPerPixel(ImageType type)
+    static uint32_t bytesPerPixel(const ImageType type)
     {
         switch (type)
         {
@@ -23,7 +23,7 @@ namespace Utils
     }
 }
 
-Image::Image(std::string_view path)
+Image::Image(const std::string_view path)
     : m_path(path)
 {
     int width, height, channels;
@@ -49,15 +49,15 @@ Image::Image(std::string_view path)
     m_width = width;
     m_height = height;
 
-    allocateMemory(m_width * m_height * Utils::bytesPerPixel(m_type));
+    allocateMemory(static_cast<uint64_t>(m_width) * m_height * Utils::bytesPerPixel(m_type));
     setData(data);
     stbi_image_free(data);
 }
 
-Image::Image(uint32_t width, uint32_t height, ImageType type, const void* data)
+Image::Image(const uint32_t width, const uint32_t height, const ImageType type, const void* data)
     : m_width(width), m_height(height), m_type(type)
 {
-    allocateMemory(m_width * m_height * Utils::bytesPerPixel(m_type));
+    allocateMemory(static_cast<uint64_t>(m_width) * m_height * Utils::bytesPerPixel(m_type));
     if (data)
         setData(data);
 }
@@ -67,7 +67,7 @@ Image::~Image()
     release();
 }
 
-void Image::allocateMemory(uint64_t size)
+void Image::allocateMemory(const uint64_t size)
 {
     m_size = size;
     m_data = malloc(m_size);
@@ -82,15 +82,15 @@ void Image::release()
     }
 }
 
-void Image::setData(const void* data)
+void Image::setData(const void* data) const
 {
     memcpy(m_data, data, m_size);
 }
 
-void Image::resize(uint32_t width, uint32_t height)
+void Image::resize(const uint32_t width, const uint32_t height)
 {
     m_width = width;
     m_height = height;
-    m_size = m_width * m_height * Utils::bytesPerPixel(m_type);
+    m_size = static_cast<uint64_t>(m_width) * m_height * Utils::bytesPerPixel(m_type);
     m_data = realloc(m_data, m_size);
 }

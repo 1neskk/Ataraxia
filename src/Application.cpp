@@ -7,8 +7,12 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
+
 #include <GL/gl.h>
-#include <GL/glext.h>
 
 #include <iostream>
 
@@ -16,17 +20,20 @@
 
 extern bool g_bRunning;
 
-static std::vector<std::vector<std::function<void()>>> s_ResourceFreeQueue;
-static uint32_t s_CurrentFrameIndex = 0;
-static Application* s_Instance = nullptr;
-
-static void glfwErrorCallback(int error, const char* description)
+namespace
 {
-    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+	std::vector<std::vector<std::function<void()>>> s_ResourceFreeQueue;
+    uint32_t s_CurrentFrameIndex = 0;
+    Application* s_Instance = nullptr;
+
+    void glfwErrorCallback(const int error, const char* description)
+    {
+        fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+    }
 }
 
-Application::Application(const Specs& specs)
-    : m_specs(specs)
+Application::Application(Specs specs)
+    : m_specs(std::move(specs))
 {
     s_Instance = this;
     init();
@@ -53,7 +60,9 @@ void Application::init()
     }
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
-    m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
+    m_window = glfwCreateWindow(static_cast<int>(m_specs.width), static_cast<int>(m_specs.height),
+        m_specs.name.c_str(), nullptr, nullptr);
+
     if (!m_window)
     {
         std::cerr << "Failed to create window" << std::endl;
@@ -95,13 +104,13 @@ void Application::init()
 
     ImFontConfig fontConfig;
     fontConfig.FontDataOwnedByAtlas = false;
-    ImFont* robotoFont = io.Fonts->AddFontFromMemoryTTF((void*)g_RobotoRegular, sizeof(g_RobotoRegular), 18.0f, &fontConfig);
+    ImFont* robotoFont = io.Fonts->AddFontFromMemoryTTF(const_cast<unsigned char*>(g_RobotoRegular), sizeof(g_RobotoRegular), 18.0f, &fontConfig);
     io.FontDefault = robotoFont;
 }
 
 void Application::shutdown()
 {
-    for (auto& layer : m_layers)
+    for (const auto& layer : m_layers)
         layer->onDetach();
 
     m_layers.clear();
@@ -123,14 +132,14 @@ void Application::run()
 {
     m_running = true;
     
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    ImGuiIO& io = ImGui::GetIO();
+    constexpr ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    const ImGuiIO& io = ImGui::GetIO();
 
     while (!glfwWindowShouldClose(m_window) && m_running)
     {
         glfwPollEvents();
 
-        for (auto& layer : m_layers)
+        for (const auto& layer : m_layers)
             layer->onUpdate(m_timeStep);
 
         ImGui_ImplOpenGL2_NewFrame();
@@ -177,7 +186,7 @@ void Application::run()
                 }
             }
 
-            for (auto& layer : m_layers)
+            for (const auto& layer : m_layers)
                 layer->onImGuiRender();
 
             ImGui::End();
@@ -203,9 +212,9 @@ void Application::run()
 
         glfwSwapBuffers(m_window);
 
-        float time = getTime();
+		const float time = getTime();
         m_frameTime = time - m_lastFrameTime;
-        m_timeStep = std::min(m_frameTime, 0.0333f);
+        m_timeStep = (m_frameTime < 0.0333f) ? m_frameTime : 0.0333f;
         m_lastFrameTime = time;
     }
 }

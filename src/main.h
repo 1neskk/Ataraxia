@@ -2,29 +2,30 @@
 #include "imgui.h"
 
 extern Application* createApplication(int argc, char** argv);
-bool g_bRunning = true;
+inline bool g_bRunning = true;
 
-int Main(int argc, char** argv)
+inline int Main(int argc, char** argv)
 {
-    while (g_bRunning)
-    {
-        Application* app = createApplication(argc, argv);
-        app->run();
-        delete app;
-    }
-    return 0;
+	while (g_bRunning)
+	{
+		Application* app = createApplication(argc, argv);
+		app->run();
+		delete app;
+	}
+	return 0;
 }
 
-#ifdef _WIN32
+#ifdef WL_RELEASE // Windows Entry Point (please set subsystem to windows)
+#include <Windows.h>
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-    return Main(0, nullptr);
+    return Main(__argc, __argv);
 }
 
 #else
 
-int main(int argc, char** argv)
+inline int main(int argc, char** argv)
 {
     return Main(argc, argv);
 }
