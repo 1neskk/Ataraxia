@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
+#include <GL/gl.h>
 
 #include "Application.h"
 
@@ -93,4 +94,18 @@ void Image::resize(const uint32_t width, const uint32_t height)
     m_height = height;
     m_size = static_cast<uint64_t>(m_width) * m_height * Utils::bytesPerPixel(m_type);
     m_data = realloc(m_data, m_size);
+}
+
+uint32_t Image::getTextureID()
+{
+    uint32_t textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_data);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    return textureID;
 }
