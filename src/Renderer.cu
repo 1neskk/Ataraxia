@@ -16,7 +16,6 @@ Renderer::~Renderer()
     delete[] h_imageData_;
 }
 
-
 void Renderer::onResize(uint32_t width, uint32_t height)
 {
     if (m_image)

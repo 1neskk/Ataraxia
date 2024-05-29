@@ -2,6 +2,7 @@
 #include "main.h"
 #include "Image.h"
 #include "Renderer.h"
+#include "Timer.h"
 
 class CUDARayTracer final : public Layer
 {
@@ -33,6 +34,7 @@ public:
             std::cout << "Rendering..." << std::endl;
         }
 
+        ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
         ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -52,14 +54,19 @@ public:
 
     void Render()
     {
+        Timer timer;
+
         m_renderer.onResize(m_viewportWidth, m_viewportHeight);
         m_renderer.Render(m_scene);
+
+        m_lastRenderTime = timer.ElapsedMS();
     }
 
 private:
     Scene m_scene;
     Renderer m_renderer;
     uint32_t m_viewportWidth = 0, m_viewportHeight = 0;
+    float m_lastRenderTime = 0.0f;
 };
 
 Application* createApplication(int argc, char** argv)
