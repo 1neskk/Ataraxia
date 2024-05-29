@@ -125,7 +125,11 @@ __device__ Vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, uint3
     float t;
     if (intersect(ray, spheres, numSpheres, t))
     {
-        return { 1.0f, 0.0f, 0.0f, 1.0f };
+    	const auto& [center, radius, id] = spheres[0];
+		const Vec3 hitPoint = ray.origin + ray.direction * t;
+		const Vec3 normal = (hitPoint - center).normalize();
+
+		return { normal.x, normal.y, normal.z, 1.0f };
     }
 
     return { 0.0f, 0.0f, 0.0f, 1.0f };

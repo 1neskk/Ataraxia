@@ -11,11 +11,19 @@ public:
     {
         {
             std::vector<Sphere> sphereVec;
+
             Sphere s;
             s.center = { 0.0f, 0.0f, -3.0f };
             s.radius = 1.0f;
             s.id = 0;
             sphereVec.push_back(s);
+
+            Sphere s1;
+            s1.center = { -3.0f, 0.0f, -3.0f };
+            s1.radius = 1.0f;
+            s1.id = 1;
+            sphereVec.push_back(s1);
+
             m_scene.setSpheres(sphereVec);
         }
     }
