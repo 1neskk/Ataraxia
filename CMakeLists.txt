@@ -8,7 +8,7 @@ enable_language(CUDA)
 find_package(OpenGL REQUIRED)
 find_package(CUDA REQUIRED)
 
-#set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_50 -DGLM_FORCE_CUDA -D__CUDACC_VER__=${CUDA_VERSION_MAJOR}${CUDA_VERSION_MINOR}")
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_50 --expt-relaxed-constexpr")
 
 file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
 "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"

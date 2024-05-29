@@ -1,10 +1,7 @@
 #pragma once
 
 #include <vector>
-
-//#define GLM_FORCE_CUDA
 #include <glm/glm.hpp>
-
 
 class Camera
 {

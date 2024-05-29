@@ -121,7 +121,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
     const glm::vec3 direction = glm::normalize(glm::vec3(u, v, -1.0f));
     const Ray ray = { glm::vec3(0.0f), direction };
     
-    float f;
+    float t;
     if (intersect(ray, spheres, numSpheres, t))
     {
         const auto& [center, radius, id] = spheres[0];
