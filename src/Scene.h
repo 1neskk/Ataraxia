@@ -1,17 +1,17 @@
 #pragma once
 
-#include "vec/Vec3.h"
+#include <glm/glm.hpp>
 #include <vector>
 
 struct Ray
 {
-    Vec3 origin;
-    Vec3 direction;
+    glm::vec3 origin;
+    glm::vec3 direction;
 };
 
 struct Sphere
 {
-    Vec3 center;
+    glm::vec3 center;
     float radius;
     int id = 0;
 };

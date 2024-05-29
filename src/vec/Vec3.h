@@ -20,6 +20,7 @@ public:
 
     // operators
     __host__ __device__ vec3& operator=(const vec3& v) { x = v.x; y = v.y; z = v.z; return *this; }
+    __host__ __devcie__ vec3& operator=(const vec3& v) const { x = v.x; y = v.y; z = v.z; return *this;}
 
     __host__ __device__ vec3& operator+=(const vec3& v) { x += v.x; y += v.y; z += v.z; return *this; }
     __host__ __device__ vec3& operator-=(const vec3& v) { x -= v.x; y -= v.y; z -= v.z; return *this; }
@@ -33,6 +34,10 @@ public:
 
     __host__ __device__ friend vec3 operator*(T s, const vec3& v) { return vec3(s * v.x, s * v.y, s * v.z); }
     __host__ __device__ friend vec3 operator/(T s, const vec3& v) { return vec3(s / v.x, s / v.y, s / v.z); }
+
+    // types are Vec3 and Vec3
+    __host__ __device__ vec3 operator*(const vec3& v) const { return vec3(x * v.x, y * v.y, z * v.z); }
+    __host__ __device__ vec3 operator/(const vec3& v) const { return vec3(x / v.x, y / v.y, z / v.z); }
 
     __host__ __device__ vec3& operator++() { x++; y++; z++; return *this; }
     __host__ __device__ vec3& operator--() { x--; y--; z--; return *this; }

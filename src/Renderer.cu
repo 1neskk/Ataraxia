@@ -1,7 +1,6 @@
 #include "Renderer.h"
 
 #include <algorithm>
-#include <device_launch_parameters.h>
 
 constexpr auto pi = 3.14159265358979323846f;
 
@@ -67,7 +66,7 @@ __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageDat
 
     if (x < width && y < height)
     {
-        const Vec4 color = Renderer::perPixel(x, y, width, height, spheres, numSpheres);
+        const glm::vec4 color = Renderer::perPixel(x, y, width, height, spheres, numSpheres);
         imageData[x + y * width] = colorUtils::vec4ToRGBA(color);
     }
 }
@@ -81,11 +80,11 @@ __device__ bool Renderer::intersect(const Ray& ray, const Sphere* spheres, size_
     {
         const auto& [center, radius, id] = spheres[i];
 
-        Vec3 origin = ray.origin - center;
+        glm::vec3 origin = ray.origin - center;
 
-        const float a = ray.direction.dot(ray.direction);
-        const float b = 2.0f * origin.dot(ray.direction);
-        const float c = origin.dot(origin) - radius * radius;
+        const float a = glm::dot(ray.direction, ray.direction);
+        const float b = 2.0f * glm::dot(ray.direction, origin);
+        const float c = glm::dot(origin, origin) - radius * radius;
         const float discriminant = b * b - 4 * a * c;
 
         if (discriminant < 0.0f)
@@ -109,7 +108,7 @@ __device__ bool Renderer::intersect(const Ray& ray, const Sphere* spheres, size_
     return true;
 }
 
-__device__ Vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, uint32_t height,
+__device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, uint32_t height,
                                    const Sphere* spheres, size_t numSpheres)
 {
     const float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
@@ -119,18 +118,17 @@ __device__ Vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, uint3
     const float u = (2.0f * (static_cast<float>(x) + 0.5f) / static_cast<float>(width) - 1.0f) * aspectRatio * scale;
     const float v = (1.0f - 2.0f * (static_cast<float>(y) + 0.5f) / static_cast<float>(height)) * scale;
 
-    const Vec3 direction = Vec3(u, v, -1.0f).normalize();
-    const Ray ray = { Vec3(0.0f, 0.0f, 0.0f), direction };
-
-    float t;
+    const glm::vec3 direction = glm::normalize(glm::vec3(u, v, -1.0f));
+    const Ray ray = { glm::vec3(0.0f), direction };
+    
+    float f;
     if (intersect(ray, spheres, numSpheres, t))
     {
-    	const auto& [center, radius, id] = spheres[0];
-		const Vec3 hitPoint = ray.origin + ray.direction * t;
-		const Vec3 normal = (hitPoint - center).normalize();
+        const auto& [center, radius, id] = spheres[0];
+        const glm::vec3 hitPoint = ray.origin + ray.direction * t;
+        const glm::vec3 normal = glm::normalize(hitPoint - center);
 
-		return { normal.x, normal.y, normal.z, 1.0f };
+        return { normal.x, normal.y, normal.z, 1.0f };
     }
-
     return { 0.0f, 0.0f, 0.0f, 1.0f };
 }
