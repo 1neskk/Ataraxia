@@ -1,6 +1,6 @@
 # CUDARayTracer
 
-![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/258a2f0d-237b-4faf-96d5-11aa976f4ed5)
+![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/9c4f74e8-ba22-4d70-a8b2-0cc12e3b3c2d)
 
 This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [Dear ImGui](https://github.com/ocornut/imgui) and [stb](https://github.com/nothings/stb)
 
@@ -25,7 +25,7 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 
 2. Build the project: `mkdir build && cmake -B build -G "Visual Studio 17 2022" -A x64 `
 
-3. Run the resulting solution file: `cd build && MSBuild CUDARayTracer.sln /p:Configuration=Release /p:Platform=x64`
+3. Run the resulting solution file: `cd build && msbuild CUDARayTracer.sln /p:Configuration=Release /p:Platform=x64`
 
 #### To Do
 - [ ] Camera system
