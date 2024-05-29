@@ -11,7 +11,7 @@ public:
         {
             std::vector<Sphere> sphereVec;
             Sphere s;
-            s.center = { 0.0f, 0.0f, 0.0f };
+            s.center = { 0.0f, 0.0f, -3.0f };
             s.radius = 1.0f;
             s.id = 0;
             sphereVec.push_back(s);
@@ -25,8 +25,17 @@ public:
         const auto& io = ImGui::GetIO();
 
         Style::theme();
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 
+        ImGui::Begin("Settings");
+        if (ImGui::Button("Render"))
+        {
+            Render();
+            std::cout << "Rendering..." << std::endl;
+        }
+
+        ImGui::End();
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Viewport");
         m_viewportWidth = ImGui::GetContentRegionAvail().x;
         m_viewportHeight = ImGui::GetContentRegionAvail().y;

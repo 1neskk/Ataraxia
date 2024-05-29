@@ -22,7 +22,7 @@ public:
 
     void resize(uint32_t width, uint32_t height);
 
-    uint32_t getTextureID();
+    uint32_t getTextureID() const;
 
 	[[nodiscard]] uint32_t getWidth() const { return m_width; }
     [[nodiscard]] uint32_t getHeight() const { return m_height; }

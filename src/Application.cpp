@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
 
+#include <GLFW/glfw3.h>
 #include <GL/gl.h>
 
 #include <iostream>
