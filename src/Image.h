@@ -39,5 +39,5 @@ private:
     ImageType m_type = ImageType::None;
     size_t m_size = 0;
     std::string m_path;
-    void* m_data = nullptr;
+	std::unique_ptr<void,void(*)(void*)> m_data = { nullptr, free };
 };

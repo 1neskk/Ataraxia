@@ -49,7 +49,7 @@ Image::Image(const std::string_view path)
 
     if (!data)
     {
-        std::cerr << "Failed to load image: " << m_path << std::endl;
+		std::cerr << "Failed to load image: " << m_path << " \n";
         return;
     }
 
@@ -76,30 +76,57 @@ Image::~Image()
 
 void Image::allocateMemory(const uint64_t size)
 {
+    if (m_data)
+    {
+        release();
+    }
+
     m_size = size;
-    m_data = malloc(m_size);
+	m_data.reset(malloc(m_size));
+
+	if (!m_data)
+	{
+		std::cerr << "Failed to allocate memory for Image: " << m_path << " \n";
+	}
+	std::cout << "Allocated memory: " << m_size << " bytes\n";
 }
 
 void Image::release()
 {
     if (m_data)
     {
-        free(m_data);
-        m_data = nullptr;
+        m_data.reset();
+		std::cout << "Released memory: " << m_size << " bytes\n";
     }
 }
 
 void Image::setData(const void* data) const
 {
-    memcpy(m_data, data, m_size);
+    memcpy(m_data.get(), data, m_size);
 }
 
 void Image::resize(const uint32_t width, const uint32_t height)
 {
+	if (m_width == width && m_height == height)
+		return;
+
     m_width = width;
     m_height = height;
     m_size = static_cast<uint64_t>(m_width) * m_height * Utils::bytesPerPixel(m_type);
-    m_data = realloc(m_data, m_size);
+
+    if (m_data)
+    {
+		std::cout << "Resizing memory: " << m_size << " bytes\n";
+		m_data.reset(realloc(m_data.release(), m_size));
+		if (!m_data)
+		{
+			std::cerr << "Failed to reallocate memory for Image resize: " << m_path << " \n";
+		}
+    }
+    else
+    {
+		allocateMemory(m_size);
+    }
 }
 
 uint32_t Image::getTextureID() const 
@@ -111,7 +138,7 @@ uint32_t Image::getTextureID() const
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, m_data.get());
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
