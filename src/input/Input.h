@@ -1,7 +1,7 @@
 #pragma once
 
 #include "KeyCodes.h"
-#include "vec/Vec2.h"
+#include <glm/glm.hpp>
 
 namespace Input
 {
@@ -10,7 +10,7 @@ namespace Input
     public:
         static bool IsKeyPressed(KeyCode key);
         static bool IsMouseButtonPressed(MouseButton button);
-        static Vec2 GetMousePosition();
+        static glm::vec2 GetMousePosition();
         static void SetCursorState(CursorState state);
     };
 }

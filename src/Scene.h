@@ -12,6 +12,12 @@ struct Ray
     glm::vec3 direction;
 };
 
+struct Light
+{
+	glm::vec3 position;
+	glm::vec3 color;
+};
+
 struct Sphere
 {
     glm::vec3 center;
@@ -21,10 +27,12 @@ struct Sphere
 
 struct Scene
 {
+	Light* lights;
+
     Sphere* spheres;
     size_t numSpheres;
 
-    Scene() : spheres(nullptr), numSpheres(0) {}
+    Scene() : spheres(nullptr), numSpheres(0), lights(nullptr) {}
 
     void setSpheres(const std::vector<Sphere>& sphereVec)
     {
@@ -38,5 +46,4 @@ struct Scene
         if (spheres)
             cudaFree(spheres);
     }
-
 };

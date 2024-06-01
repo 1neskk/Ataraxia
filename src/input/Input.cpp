@@ -20,7 +20,7 @@ namespace Input
         return state == GLFW_PRESS;
     }
 
-    Vec2 Input::GetMousePosition()
+    glm::vec2 Input::GetMousePosition()
     {
         GLFWwindow* window = Application::get().getWindow();
         double xpos, ypos;
