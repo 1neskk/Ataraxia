@@ -28,6 +28,7 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 3. Run the resulting solution file: `cd build && msbuild CUDARayTracer.sln /p:Configuration=Release /p:Platform=x64`
 
 #### To Do
+- [ ] Implement lightning
 - [ ] Camera system
 - [ ] Material system
-- [ ] Implement GLM
+- [ ] Add GLM

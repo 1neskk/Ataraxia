@@ -1,27 +1,38 @@
 #pragma once
 
-#include "vec/Vec3.h"
+#include <cuda_runtime.h>
+
+#define GLM_FORCE_CUDA
+#include <glm/glm.hpp>
 #include <vector>
 
 struct Ray
 {
-    Vec3 origin;
-    Vec3 direction;
+    glm::vec3 origin;
+    glm::vec3 direction;
+};
+
+struct Light
+{
+	glm::vec3 position;
+	glm::vec3 color;
 };
 
 struct Sphere
 {
-    Vec3 center;
+    glm::vec3 center;
     float radius;
     int id = 0;
 };
 
 struct Scene
 {
+	Light* lights;
+
     Sphere* spheres;
     size_t numSpheres;
 
-    Scene() : spheres(nullptr), numSpheres(0) {}
+    Scene() : spheres(nullptr), numSpheres(0), lights(nullptr) {}
 
     void setSpheres(const std::vector<Sphere>& sphereVec)
     {
@@ -35,5 +46,4 @@ struct Scene
         if (spheres)
             cudaFree(spheres);
     }
-
 };

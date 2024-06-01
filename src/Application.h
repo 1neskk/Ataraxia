@@ -6,6 +6,7 @@
 #include <functional>
 
 #include "imgui.h"
+#include "vulkan/vulkan.h"
 
 class Layer
 {
@@ -14,22 +15,25 @@ public:
 
     virtual void onAttach() {}
     virtual void onDetach() {}
+
     virtual void onUpdate(float ts) {}
-    virtual void onImGuiRender() {}
+    virtual void onGuiRender() {}
 };
+
+void checkVkResult(VkResult result);
 
 struct GLFWwindow;
 
 struct Specs
 {
-    std::string name = "Application";
-	uint32_t width = 1280, height = 720;
+    std::string name = "Vulkan Application";
+    uint32_t width = 1280, height = 720;
 };
 
 class Application
 {
 public:
-    Application(Specs specs = Specs());
+    Application(const Specs& specs = Specs());
     ~Application();
 
     static Application& get();
@@ -51,11 +55,20 @@ public:
     }
 
     void close();
-    static float getTime();
+    float getTime();
 
-    [[nodiscard]] GLFWwindow* getWindow() const { return m_window; }
+    GLFWwindow* getWindow() { return m_window; }
 
-    
+    static VkInstance getInstance();
+    static VkPhysicalDevice getPhysicalDevice();
+    static VkDevice getDevice();
+
+    static VkCommandBuffer beginSingleTimeCommands();
+    static VkCommandBuffer submitSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+    static VkCommandBuffer getCommandBuffer(bool begin);
+    static void flushCommandBuffer(VkCommandBuffer commandBuffer);
+
     static void submitResourceFree(std::function<void()>&& func);
 
 private:
@@ -64,12 +77,12 @@ private:
 
 private:
     Specs m_specs;
-    bool m_running = true;
     GLFWwindow* m_window = nullptr;
+    bool m_running = true;
 
-    float m_lastFrameTime = 0.0f;
-    float m_frameTime = 0.0f;
     float m_timeStep = 0.0f;
+    float m_frameTime = 0.0f;
+    float m_lastFrameTime = 0.0f;
 
     std::vector<std::shared_ptr<Layer>> m_layers;
     std::function<void()> m_menubarCallback;

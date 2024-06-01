@@ -2,6 +2,7 @@
 #include "main.h"
 #include "Image.h"
 #include "Renderer.h"
+#include "Timer.h"
 
 class CUDARayTracer final : public Layer
 {
@@ -9,17 +10,19 @@ public:
     CUDARayTracer()
     {
         {
-            std::vector<Sphere> sphereVec;
+			std::vector<Sphere> spheres;
+
             Sphere s;
             s.center = { 0.0f, 0.0f, -3.0f };
             s.radius = 1.0f;
             s.id = 0;
-            sphereVec.push_back(s);
-            m_scene.setSpheres(sphereVec);
+			spheres.push_back(s);
+
+            m_scene.setSpheres(spheres);
         }
     }
     
-    virtual void onImGuiRender() override
+    virtual void onGuiRender() override
     {
         ImGui::CreateContext();
         const auto& io = ImGui::GetIO();
@@ -30,9 +33,11 @@ public:
         if (ImGui::Button("Render"))
         {
             Render();
-            std::cout << "Rendering..." << std::endl;
+            std::cout << "Rendering...\n";
         }
 
+        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 26);
+        ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
         ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -40,9 +45,9 @@ public:
         m_viewportWidth = ImGui::GetContentRegionAvail().x;
         m_viewportHeight = ImGui::GetContentRegionAvail().y;
 
-        if (const auto image = m_renderer.getImage())
-            ImGui::Image((void*)(intptr_t)image->getTextureID(), { static_cast<float>(image->getWidth()),
-            static_cast<float>(image->getHeight()) }, ImVec2(0, 1), ImVec2(1, 0));
+		if (const auto image = m_renderer.getImage())
+            ImGui::Image(image->getDescriptorSet(), { static_cast<float>(image->getWidth()), static_cast<float>(image->getHeight()) },
+                ImVec2(0, 1), ImVec2(1, 0));
 
         ImGui::End();
         ImGui::PopStyleVar();
@@ -52,14 +57,19 @@ public:
 
     void Render()
     {
+        Timer timer;
+
         m_renderer.onResize(m_viewportWidth, m_viewportHeight);
         m_renderer.Render(m_scene);
+
+        m_lastRenderTime = timer.ElapsedMS();
     }
 
 private:
     Scene m_scene;
     Renderer m_renderer;
     uint32_t m_viewportWidth = 0, m_viewportHeight = 0;
+    float m_lastRenderTime = 0.0f;
 };
 
 Application* createApplication(int argc, char** argv)
