@@ -7,6 +7,7 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 **Officially supports Windows 10/11 with Visual Studio 2022 and Linux (tested on the LTS kernel with Wayland)**
 
 ## Requirements
+- [Vulkan SDK](https://vulkan.lunarg.com/)
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
 
 ## Get Started
@@ -31,4 +32,3 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 - [ ] Implement lightning
 - [ ] Camera system
 - [ ] Material system
-- [ ] Add GLM
