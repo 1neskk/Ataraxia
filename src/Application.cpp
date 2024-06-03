@@ -426,6 +426,7 @@ void Application::init()
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.Allocator = g_allocator;
 	init_info.CheckVkResultFn = checkVkResult;
+	init_info.RenderPass = wd->RenderPass;
 	ImGui_ImplVulkan_Init(&init_info);
 
 

@@ -2,9 +2,10 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
-#include "Input/Input.h"
+#include "input/Input.h"
 
 typedef Input::Input input;
 

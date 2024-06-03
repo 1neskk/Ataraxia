@@ -10,15 +10,11 @@ public:
     CUDARayTracer()
     {
         {
-			std::vector<Sphere> spheres;
-
             Sphere s;
             s.center = { 0.0f, 0.0f, -3.0f };
             s.radius = 1.0f;
             s.id = 0;
-			spheres.push_back(s);
-
-            m_scene.setSpheres(spheres);
+            m_scene.spheres.emplace_back(s);
         }
     }
     
