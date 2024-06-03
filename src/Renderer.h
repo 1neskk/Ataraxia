@@ -12,25 +12,41 @@
 
 class Renderer
 {
+	struct HitRecord
+	{
+		float t;
+		glm::vec3 worldNormal;
+		glm::vec3 normal;
+		Sphere sphere;
+		uint32_t id;
+	};
+
 public:
-    Renderer() = default;
+    Renderer();
     ~Renderer();
     
     void onResize(uint32_t width, uint32_t height);
     void Render(const Scene& scene);
 
-	static __device__ bool intersect(const Ray& ray, const Sphere* spheres, size_t numSpheres, float& t);
+    [[nodiscard]] std::shared_ptr<Image> getImage() const { return m_image; }
 
+    // TODO: Implement Camera
+	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);
+	static __device__ HitRecord rayMiss(const Ray& ray);
+	static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, uint32_t height, const Sphere* spheres, size_t numSpheres);
 
-    std::shared_ptr<Image> getImage() const { return m_image; }
+private:
+	void allocateDeviceMemory(const Scene& scene);
+    void freeDeviceMemory();
 
 private:
     const Scene* m_scene = nullptr;
+	Sphere* d_spheres_ = nullptr; // device spheres
 
 	std::shared_ptr<Image> m_image = nullptr;
-    uint32_t* h_imageData_ = nullptr;
-    uint32_t* d_imageData_ = nullptr;
+    uint32_t* h_imageData_ = nullptr;  // host image data
+    uint32_t* d_imageData_ = nullptr; // device image data
 
     uint32_t m_width = 0, m_height = 0;
 };
