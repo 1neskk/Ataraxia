@@ -8,7 +8,12 @@ class CUDARayTracer final : public Layer
 {
 public:
     CUDARayTracer()
+        : m_camera(45.0f, 0.1f, 100.0f)
     {
+		Material& m1 = m_scene.materials.emplace_back();
+		m1.albedo = { 1.0f, 1.0f, 1.0f };
+		m1.diffuse = 0.8f;
+
         {
             Sphere s;
             s.center = { 0.0f, 0.0f, -3.0f };
@@ -16,6 +21,11 @@ public:
             s.id = 0;
             m_scene.spheres.emplace_back(s);
         }
+    }
+
+    virtual void onUpdate(float ts) override
+    {
+        m_camera.onUpdate(ts);
     }
     
     virtual void onGuiRender() override
@@ -56,7 +66,8 @@ public:
         Timer timer;
 
         m_renderer.onResize(m_viewportWidth, m_viewportHeight);
-        m_renderer.Render(m_scene);
+        m_camera.Resize(m_viewportWidth, m_viewportHeight);
+        m_renderer.Render(m_camera, m_scene);
 
         m_lastRenderTime = timer.ElapsedMS();
     }
@@ -64,6 +75,8 @@ public:
 private:
     Scene m_scene;
     Renderer m_renderer;
+	Camera m_camera;
+
     uint32_t m_viewportWidth = 0, m_viewportHeight = 0;
     float m_lastRenderTime = 0.0f;
 };

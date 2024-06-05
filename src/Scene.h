@@ -13,7 +13,12 @@ struct Ray
 
 struct Material
 {
-	glm::vec3 albedo;
+	glm::vec3 albedo{ 1.0f };
+	float diffuse{ 1.0f };
+	float specular{ 0.0f };
+	float shininess{ 0.0f };
+
+	int id = 0;
 };
 
 struct Light
@@ -27,11 +32,10 @@ struct Sphere
     glm::vec3 center;
     float radius;
     int id = 0;
-	//Material material;
 };
 
 struct Scene
 {
-	//std::vector<Light> lightSources;
 	std::vector<Sphere> spheres;
+	std::vector<Material> materials;
 };
