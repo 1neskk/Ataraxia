@@ -1,8 +1,8 @@
-#include "Renderer.h"
-
 #include <algorithm>
 #include <iostream>
 #include <cfloat>
+
+#include "Renderer.h"
 
 Renderer::Renderer() : d_spheres_(nullptr), h_imageData_(nullptr), d_imageData_(nullptr)
 {}
@@ -47,7 +47,7 @@ void Renderer::onResize(uint32_t width, uint32_t height)
     m_height = height;
 }
 
-void Renderer::Render(const Camera& camera, const Scene& scene)
+void Renderer::Render(Camera& camera, const Scene& scene)
 {
     m_scene = &scene;
 
@@ -56,17 +56,14 @@ void Renderer::Render(const Camera& camera, const Scene& scene)
     if (!m_image)
         return;
 
-    glm::vec3* d_rayDirs;
-	size_t rayDirSize = m_width * m_height * sizeof(glm::vec3);
-    cudaMalloc(&d_rayDirs, rayDirSize);
-    cudaMemcpy(d_rayDirs, camera.getRayDirection().data(), rayDirSize, cudaMemcpyHostToDevice);
+	DeviceCamera d_camera;
+    camera.allocateDevice(d_camera);
 
     dim3 blockSize(16, 16);
     dim3 numBlocks((m_width + blockSize.x - 1) / blockSize.x,
                    (m_height + blockSize.y - 1) / blockSize.y);
 
-	kernelRender<<<numBlocks, blockSize>>>(m_width, m_height, d_imageData_, d_spheres_, scene.spheres.size(),
-        m_materials, camera.getPosition(), d_rayDirs);
+	kernelRender<<<numBlocks, blockSize>>>(m_width, m_height, d_imageData_, d_spheres_, scene.spheres.size(), d_camera);
 
 	cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
@@ -91,7 +88,7 @@ void Renderer::Render(const Camera& camera, const Scene& scene)
 	}
 
     m_image->setData(h_imageData_);
-	cudaFree(d_rayDirs);
+	camera.freeDevice(d_camera);
 }
 
 void Renderer::allocateDeviceMemory(const Scene& scene)
@@ -107,17 +104,6 @@ void Renderer::allocateDeviceMemory(const Scene& scene)
 	err = cudaMemcpy(d_spheres_, scene.spheres.data(), numSpheres * sizeof(Sphere), cudaMemcpyHostToDevice);
 	if (err != cudaSuccess)
 		std::cerr << "cudaMemcpy failed: " << cudaGetErrorString(err) << "\n";
-
-	if (m_materials)
-		cudaFree(m_materials);
-
-	err = cudaMalloc(&m_materials, sizeof(Material));
-    if (err != cudaSuccess)
-		std::cerr << "cudaMalloc failed: " << cudaGetErrorString(err) << "\n";
-
-	err = cudaMemcpy(m_materials, &scene.materials, sizeof(Material), cudaMemcpyHostToDevice);
-	if (err != cudaSuccess)
-		std::cerr << "cudaMemcpy failed: " << cudaGetErrorString(err) << "\n";
 }
 
 void Renderer::freeDeviceMemory()
@@ -127,23 +113,17 @@ void Renderer::freeDeviceMemory()
         cudaFree(d_spheres_);
         d_spheres_ = nullptr;
 	}
-
-	if (m_materials)
-	{
-	    cudaFree(m_materials);
-		m_materials = nullptr;
-	}
 }
 
 __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
-    size_t numSpheres, const Material* material, const glm::vec3 camPos, const glm::vec3* rayDirs)
+    size_t numSpheres, const DeviceCamera d_camera)
 {
     const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (x < width && y < height)
 	{
-		const glm::vec4 color = Renderer::perPixel(x, y, width, height, spheres, numSpheres, material, camPos, rayDirs);
+		const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, d_camera);
 		imageData[x + y * width] = colorUtils::vec4ToRGBA(color);
     }
 }
@@ -184,38 +164,44 @@ __device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* 
 	return rayHit(ray, tmin, closestSphere, spheres);
 }
 
-__device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, uint32_t height, const Sphere* spheres,
-    size_t numSpheres, const Material* material, const glm::vec3& camPos, const glm::vec3* rayDirs)
+__device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
+    size_t numSpheres, const DeviceCamera& d_camera)
 {
     Ray ray;
-    ray.origin = camPos;
-    ray.direction = rayDirs[x + y * width];
+    ray.origin = d_camera.position;
+    ray.direction = d_camera.rayDirection[x + y * width];
 
-    glm::vec3 light(0.0f);
-    glm::vec3 throughput(1.0f);
-
-	uint32_t seed = x + y * width;
-
+    glm::vec3 color(0.0f);
+    float m = 1.0f;
     constexpr int bounces = 1;
+
     for (int i = 0; i < bounces; i++)
     {
-        seed += i;
-
 		HitRecord ht = traceRay(ray, spheres, numSpheres);
         if (ht.t < 0.0f)
         {
-			auto missColor = glm::vec3(0.6f, 0.7f, 0.9f);
-			light += missColor;
+			glm::vec3 missColor(0.6f, 0.7f, 0.9f);
+			color += missColor * m;
             break;
         }
-		const auto& [center, radius, id] = spheres[ht.id];
 
-        throughput *= material->albedo;
+        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
+		float light = glm::dot(-lightDir, ht.normal);
+		if (light < 0.0f)
+			light = 0.0f;
+
+        const auto& [center, radius, id] = spheres[ht.id];
+		//const Material& mat = m_scene->materials[id];
+
+        glm::vec3 sphereColor = glm::vec3(1.0f, 0.0f, 0.0f) * light;
+		color += sphereColor * m;
+
+        m *= 0.5f;
 
 		ray.origin = ht.worldNormal + ht.normal * 0.0001f;
-		ray.direction = glm::normalize(glm::reflect(ray.direction, ht.normal));
+		ray.direction = glm::reflect(ray.direction, ht.normal * glm::vec3(0.5f, 0.5f, 0.5f));
     }
-    return { light, 1.0f };
+    return { color, 1.0f };
 }
 
 __device__ Renderer::HitRecord Renderer::rayMiss(const Ray& ray)

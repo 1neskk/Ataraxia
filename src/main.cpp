@@ -12,7 +12,11 @@ public:
     {
 		Material& m1 = m_scene.materials.emplace_back();
 		m1.albedo = { 1.0f, 1.0f, 1.0f };
-		m1.diffuse = 0.8f;
+		m1.diffuse = 0.3f;
+
+		Material& m2 = m_scene.materials.emplace_back();
+		m2.albedo = { 1.0f, 0.0f, 0.0f };
+        m2.diffuse = 1.0f;
 
         {
             Sphere s;
@@ -44,6 +48,22 @@ public:
 
         ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 26);
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
+        ImGui::End();
+
+		ImGui::Begin("Scene settings");
+		for (size_t i = 0; i < m_scene.spheres.size(); i++)
+        {
+            ImGui::PushID(i);
+			ImGui::Text("Sphere %d", i);
+
+            ImGui::DragFloat3("Position", &m_scene.spheres[i].center[0], 0.01f);
+			ImGui::DragFloat("Radius", &m_scene.spheres[i].radius, 0.01f);
+
+            ImGui::DragInt("Material index", &m_scene.spheres[i].id, 0.5f, 0, static_cast<int>(m_scene.materials.size() - 1));
+
+            ImGui::Separator();
+			ImGui::PopID();
+		}
         ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));

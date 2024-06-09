@@ -1,7 +1,8 @@
 #pragma once
 
+#include <dinput.h>
 #include <vector>
-#include "glm/glm.hpp"
+#include "DeviceCamera.h"
 
 class Camera
 {
@@ -10,6 +11,9 @@ public:
 
 	bool onUpdate(float dt);
 	void Resize(uint32_t width, uint32_t height);
+
+	void allocateDevice(DeviceCamera& deviceCamera);
+	void freeDevice(DeviceCamera& deviceCamera);
 
 	const glm::mat4& getViewMatrix() const { return m_viewMatrix; }
 	const glm::mat4& getProjectionMatrix() const { return m_projectionMatrix; }
@@ -20,7 +24,8 @@ public:
 	const glm::vec3& getDirection() const { return m_direction; }
 
 	const std::vector<glm::vec3>& getRayDirection() const { return m_rayDirection; }
-	float getRotationSpeed();
+	static float getRotationSpeed();
+
 private:
 	void UpdateProjectionMatrix();
 	void UpdateViewMatrix();
@@ -42,4 +47,6 @@ private:
 
 	glm::vec2 m_lastMousePos{ 0.0f };
 	uint32_t m_width = 0, m_height = 0;
+	bool m_viewDirty = true;
+	bool m_projectionDirty = true;
 };

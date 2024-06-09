@@ -7,8 +7,15 @@
 
 struct Ray
 {
-    glm::vec3 origin;
+	glm::vec3 origin;
     glm::vec3 direction;
+};
+
+struct Sphere
+{
+	glm::vec3 center;
+	float radius;
+	int id = 0;
 };
 
 struct Material
@@ -25,13 +32,6 @@ struct Light
 {
 	glm::vec3 position;
 	glm::vec3 intensity;
-};
-
-struct Sphere
-{
-    glm::vec3 center;
-    float radius;
-    int id = 0;
 };
 
 struct Scene
