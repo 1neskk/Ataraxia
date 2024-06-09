@@ -5,30 +5,31 @@
 
 namespace Input
 {
-    typedef enum class KeyCode : uint16_t
-    {
-        Space = 32,
-        Apostrophe = 39,
-        Comma = 44,
-        Minus = 45,
-        Period = 46,
-        Slash = 47,
+	typedef enum class KeyCode : uint16_t
+	{
+		// From glfw3.h
+		Space = 32,
+		Apostrophe = 39, /* ' */
+		Comma = 44, /* , */
+		Minus = 45, /* - */
+		Period = 46, /* . */
+		Slash = 47, /* / */
 
-        D0 = 48,
-        D1 = 49,
-        D2 = 50,
-        D3 = 51,
-        D4 = 52,
-        D5 = 53,
-        D6 = 54,
-        D7 = 55,
-        D8 = 56,
-        D9 = 57,
+		D0 = 48, /* 0 */
+		D1 = 49, /* 1 */
+		D2 = 50, /* 2 */
+		D3 = 51, /* 3 */
+		D4 = 52, /* 4 */
+		D5 = 53, /* 5 */
+		D6 = 54, /* 6 */
+		D7 = 55, /* 7 */
+		D8 = 56, /* 8 */
+		D9 = 57, /* 9 */
 
-        Semicolon = 59,
-        Equal = 61,
+		Semicolon = 59, /* ; */
+		Equal = 61, /* = */
 
-        A = 65,
+		A = 65,
 		B = 66,
 		C = 67,
 		D = 68,
@@ -55,16 +56,17 @@ namespace Input
 		Y = 89,
 		Z = 90,
 
-        LeftBracket = 91,
-        Backslash = 92,
-        RightBracket = 93,
-        GraveAccent = 96,
+		LeftBracket = 91,  /* [ */
+		Backslash = 92,  /* \ */
+		RightBracket = 93,  /* ] */
+		GraveAccent = 96,  /* ` */
 
-        world1 = 161,
-        world2 = 162,
+		World1 = 161, /* non-US #1 */
+		World2 = 162, /* non-US #2 */
 
-        Escape = 256,
-        Enter = 257,
+		/* Function keys */
+		Escape = 256,
+		Enter = 257,
 		Tab = 258,
 		Backspace = 259,
 		Insert = 260,
@@ -136,24 +138,24 @@ namespace Input
 		RightAlt = 346,
 		RightSuper = 347,
 		Menu = 348
-    } Key;
+	} Key;
 
-    enum class KeyState
-    {
-        None= -1,
-        Pressed,
-        Held,
-        Released,
-    };
+	enum class KeyState
+	{
+		None = -1,
+		Pressed,
+		Held,
+		Released
+	};
 
-    enum class CursorState
-    {
-        Normal = 0,
-        Hidden = 1,
-        Locked = 2
-    };
+	enum class CursorMode
+	{
+		Normal = 0,
+		Hidden = 1,
+		Locked = 2
+	};
 
-    typedef enum class MouseButton : uint16_t
+	typedef enum class MouseButton : uint16_t
 	{
 		Button0 = 0,
 		Button1 = 1,

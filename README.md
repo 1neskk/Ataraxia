@@ -1,6 +1,6 @@
 # CUDARayTracer
 
-![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/9c4f74e8-ba22-4d70-a8b2-0cc12e3b3c2d)
+![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/848d0f6f-6f14-4836-822f-560e018a7e3f)
 
 This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [Dear ImGui](https://github.com/ocornut/imgui) and [stb](https://github.com/nothings/stb)
 
@@ -29,6 +29,4 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 3. Run the resulting solution file: `cd build && msbuild CUDARayTracer.sln /p:Configuration=Release /p:Platform=x64`
 
 #### To Do
-- [ ] Implement lightning
-- [ ] Camera system
 - [ ] Material system
