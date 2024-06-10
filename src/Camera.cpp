@@ -1,6 +1,7 @@
 #include <thread>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
 #include "Camera.h"
@@ -91,6 +92,12 @@ bool Camera::onUpdate(float dt)
 
 void Camera::Resize(uint32_t width, uint32_t height)
 {
+    if (width == 0 || height == 0)
+    {
+        std::cerr << "Error: Width or height cannot be zero.\n";
+        return;
+    }
+
 	if (width == m_width && height == m_height)
 		return;
 
@@ -111,7 +118,19 @@ void Camera::UpdateProjectionMatrix()
 {
 	if (m_projectionDirty)
 	{
-		m_projectionMatrix = glm::perspective(glm::radians(m_fov), static_cast<float>(m_width) / static_cast<float>(m_height), m_nearClip, m_farClip);
+        if (m_width == 0 || m_height == 0)
+        {
+            std::cerr << "Error: Width or height cannot be zero.\n";
+            return;
+        }
+        float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+        if (aspectRatio <= std::numeric_limits<float>::epsilon())
+        {
+            std::cerr << "Error: invalid Aspect ratio\n";
+            return;
+        }
+
+		m_projectionMatrix = glm::perspective(glm::radians(m_fov), aspectRatio , m_nearClip, m_farClip);
 		m_inverseProjectionMatrix = glm::inverse(m_projectionMatrix);
 		m_projectionDirty = false;
 	}
