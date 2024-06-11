@@ -1,6 +1,5 @@
 #pragma once
 
-#include <dinput.h>
 #include <vector>
 #include "DeviceCamera.h"
 
