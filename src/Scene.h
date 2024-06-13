@@ -34,6 +34,11 @@ struct Light
 	glm::vec3 intensity;
 };
 
+struct Settings
+{
+	bool accumulation = true;
+};
+
 struct Scene
 {
 	std::vector<Sphere> spheres;

@@ -118,11 +118,6 @@ void Camera::UpdateProjectionMatrix()
 {
 	if (m_projectionDirty)
 	{
-        if (m_width == 0 || m_height == 0)
-        {
-            std::cerr << "Error: Width or height cannot be zero.\n";
-            return;
-        }
         float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
         if (aspectRatio <= std::numeric_limits<float>::epsilon())
         {

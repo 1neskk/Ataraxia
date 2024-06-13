@@ -11,11 +11,11 @@ public:
         : m_camera(45.0f, 0.1f, 100.0f)
     {
 		Material& m1 = m_scene.materials.emplace_back();
-		m1.albedo = { 1.0f, 1.0f, 1.0f };
+		m1.albedo = { 1.0f, 0.0f, 0.0f };
 		m1.diffuse = 0.3f;
 
 		Material& m2 = m_scene.materials.emplace_back();
-		m2.albedo = { 1.0f, 0.0f, 0.0f };
+		m2.albedo = { 0.65f, 0.0f, 1.0f };
         m2.diffuse = 1.0f;
 
         {
@@ -29,7 +29,8 @@ public:
 
     virtual void onUpdate(float ts) override
     {
-        m_camera.onUpdate(ts);
+        if (m_camera.onUpdate(ts))
+            m_renderer.resetFrameIndex();
     }
     
     virtual void onGuiRender() override
@@ -40,11 +41,10 @@ public:
         Style::theme();
 
         ImGui::Begin("Settings");
-        if (ImGui::Button("Render"))
-        {
-            Render();
-            std::cout << "Rendering...\n";
-        }
+
+        ImGui::Checkbox("Accumulation", &m_renderer.getSettings().accumulation);
+        if (ImGui::Button("Reset Frame Index"))
+            m_renderer.resetFrameIndex();
 
         ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 26);
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
@@ -65,6 +65,22 @@ public:
 			ImGui::PopID();
 		}
         ImGui::End();
+
+        ImGui::Begin("Material settings");
+		for (size_t i = 0; i < m_scene.materials.size(); i++)
+        {
+	        ImGui::PushID(i);
+			ImGui::Text("Material %d", i);
+
+			ImGui::ColorEdit3("Albedo", &m_scene.materials[i].albedo[0]);
+			ImGui::DragFloat("Diffuse", &m_scene.materials[i].diffuse, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Specular", &m_scene.materials[i].specular, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Shininess", &m_scene.materials[i].shininess, 0.01f, 0.0f, 1.0f);
+
+			ImGui::Separator();
+			ImGui::PopID();
+		}
+		ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Viewport");

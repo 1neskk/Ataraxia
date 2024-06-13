@@ -2,6 +2,7 @@
 
 #include <random>
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 
 #include <glm/glm.hpp>
 
@@ -10,63 +11,62 @@ namespace Random
 	class Random
 	{
 	public:
-		static void Init()
+		__device__ static void Init(curandState* state, unsigned long long seed, int id)
 		{
-			s_RandomEngine.seed(std::random_device()());
+			curand_init(seed, id, 0, state);
 		}
 
-		static uint32_t UInt()
+		__device__ static uint32_t UInt(curandState* state, int id)
 		{
-			return s_Distribution(s_RandomEngine);
+			return curand(&state[id]);
 		}
 
-		static uint32_t UInt(uint32_t min, uint32_t max)
+		__device__ static uint32_t UInt(curandState* state, uint32_t min, uint32_t max, int id)
 		{
-			return min + (s_Distribution(s_RandomEngine) % (max - min + 1));
+			return min + (curand(&state[id]) % (max - min + 1));
 		}
 
-		static float Float()
+		__device__ static float Float(curandState* state, int id)
 		{
-			return static_cast<float>(s_Distribution(s_RandomEngine)) / static_cast<float>(std::numeric_limits<uint32_t>::max());
+			return curand_uniform(&state[id]);
 		}
 
-		static glm::vec3 Vec3()
+		__device__ static float Float(curandState* state, float min, float max, int id)
 		{
-			return { Float(), Float(), Float() };
+			return min + (max - min) * curand_uniform(&state[id]);
 		}
 
-		static glm::vec3 Vec3(float min, float max)
+		__device__ static glm::vec3 Vec3(curandState* state, int id)
 		{
-			return { Float() * (max - min) + min, Float() * (max - min) + min, Float() * (max - min) + min };
+			return { Float(state, id), Float(state, id), Float(state, id) };
 		}
 
-		static glm::vec3 InUnitSphere()
+		__device__ static glm::vec3 Vec3(curandState* state, float min, float max, int id)
 		{
-			return glm::normalize(Vec3(-1.0f, 1.0f));
+			return { Float(state, min, max, id), Float(state, min, max, id), Float(state, min, max, id) };
 		}
 
-		static glm::vec3 PcgInUnitSphere(uint32_t& seed)
+		__device__ static glm::vec3 InUnitSphere(curandState* state, int id)
+		{
+			return glm::normalize(Vec3(state, -1.0f, 1.0f, id));
+		}
+
+		__device__ static glm::vec3 PcgInUnitSphere(uint32_t& seed)
 		{
 			return glm::normalize(glm::vec3(PcgFloat(seed) * 2.0f - 1.0f, PcgFloat(seed) * 2.0f - 1.0f, PcgFloat(seed) * 2.0f - 1.0f));
 		}
 
-		static uint32_t PcgHash(uint32_t& seed)
+		__device__ static uint32_t PcgHash(uint32_t& seed)
 		{
 			uint32_t state = seed * 747796405u + 2891336453u;
 			uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
 			return (word >> 22u) ^ word;
 		}
 
-		static float PcgFloat(uint32_t& seed)
+		__device__ static float PcgFloat(uint32_t& seed)
 		{
 			seed = PcgHash(seed);
-			return static_cast<float>(seed) / static_cast<float>(std::numeric_limits<uint32_t>::max());
+			return static_cast<float>(seed) / static_cast<float>(UINT32_MAX);
 		}
-	private:
-		static thread_local std::mt19937 s_RandomEngine;
-		static std::uniform_int_distribution<std::mt19937::result_type> s_Distribution;
 	};
-
-	thread_local std::mt19937 Random::s_RandomEngine;
-	std::uniform_int_distribution<std::mt19937::result_type> Random::s_Distribution;
 }
