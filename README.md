@@ -8,6 +8,7 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 
 ## Requirements
 - [Vulkan SDK](https://vulkan.lunarg.com/)
+- NVIDIA GPU
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
 
 ## Get Started
