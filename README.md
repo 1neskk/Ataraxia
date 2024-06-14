@@ -1,4 +1,4 @@
-# CUDARayTracer
+# PathTracingEngine
 
 ![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
 
