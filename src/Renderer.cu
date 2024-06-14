@@ -169,13 +169,10 @@ __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageDat
     if (x < width && y < height)
 	{
 		const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, d_camera, materials, frameIndex);
-
 		const uint32_t pixelIndex = x + y * width;
-        glm::vec4 finalColor = accumulation[pixelIndex];
-
-		finalColor = (finalColor * static_cast<float>(frameIndex) + color) / static_cast<float>(frameIndex + 1);
-		accumulation[pixelIndex] = finalColor;
-
+        accumulation[pixelIndex] += color;
+		glm::vec4 finalColor = accumulation[pixelIndex] / static_cast<float>(frameIndex);
+        finalColor = glm::clamp(finalColor, 0.0f, 1.0f);
 		imageData[pixelIndex] = colorUtils::vec4ToRGBA(finalColor);
     }
 }
@@ -223,12 +220,13 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
     ray.origin = d_camera.position;
     ray.direction = d_camera.rayDirection[x + y * width];
 
-    glm::vec3 color(0.0f);
-    float m = 1.0f;
-    constexpr int bounces = 10;
+    glm::vec3 light(0.0f);
+    glm::vec3 throughput(1.0f);
 
     uint32_t seed = x + y * width;
 	seed *= frameIndex;
+
+    constexpr int bounces = 10;
 
     for (int i = 0; i < bounces; i++)
     {
@@ -237,28 +235,27 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 		HitRecord ht = traceRay(ray, spheres, numSpheres);
         if (ht.t < 0.0f)
         {
-			glm::vec3 missColor(0.6f, 0.7f, 0.9f);
-			color += missColor * m;
+#define SKY_LIGHT 1
+#if SKY_LIGHT
+            glm::vec3 missColor(0.6f, 0.7f, 0.9f);
+			light += missColor * throughput;
             break;
+#else
+			light += glm::vec3(0.0f);
+            break;
+#endif
         }
-
-        glm::vec3 lightDir = glm::normalize(glm::vec3(-1.0f, -1.0f, -1.0f));
-		float light = glm::dot(-lightDir, ht.normal);
-		if (light < 0.0f)
-			light = 0.0f;
 
         const auto& [center, radius, id] = spheres[ht.id];
 		const Material& mat = materials[id];
 
-        glm::vec3 sphereColor = mat.albedo * light;
-		color += sphereColor * m;
+		throughput *= mat.albedo;
+        light += mat.getEmission();
 
-        m *= 0.5f;
-
-		ray.origin = ht.worldNormal + ht.normal * 0.0001f;
-        ray.direction = glm::reflect(ray.direction, ht.normal * Random::Random::PcgInUnitSphere(seed));
+		ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
+        ray.direction = glm::normalize(ht.worldNormal + Random::Random::PcgInUnitSphere(seed));
     }
-    return { color, 1.0f };
+    return { light, 1.0f };
 }
 
 __device__ Renderer::HitRecord Renderer::rayMiss(const Ray& ray)
@@ -268,17 +265,17 @@ __device__ Renderer::HitRecord Renderer::rayMiss(const Ray& ray)
     return ht;
 }
 
-__device__ Renderer::HitRecord Renderer::rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres)
+__device__ Renderer::HitRecord Renderer::rayHit(const Ray& ray, float tmin, const int index, const Sphere* spheres)
 {
     HitRecord ht;
     ht.t = tmin;
     ht.id = index;
 
 	const glm::vec3 origin = ray.origin - spheres[index].center;
-    ht.worldNormal = origin + ray.direction * tmin;
-	ht.normal = glm::normalize(ht.worldNormal);
+    ht.worldPos = origin + ray.direction * tmin;
+	ht.worldNormal = glm::normalize(ht.worldPos);
 
-	ht.worldNormal += spheres[index].center;
+	ht.worldPos += spheres[index].center;
 
     return ht;
 }

@@ -16,8 +16,8 @@ class Renderer
 	struct HitRecord
 	{
 		float t;
+		glm::vec3 worldPos;
 		glm::vec3 worldNormal;
-		glm::vec3 normal;
 		Sphere sphere;
 		uint32_t id;
 	};

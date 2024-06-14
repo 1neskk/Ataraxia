@@ -31,7 +31,7 @@ bool Camera::onUpdate(float dt)
 	}
 
 	input::SetCursorMode(Input::CursorMode::Locked);
-	//bool moved = false;
+	bool moved = false;
 
 	constexpr glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 right = glm::cross(m_direction, up);
@@ -42,33 +42,39 @@ bool Camera::onUpdate(float dt)
 	{
 		m_position += m_direction * speed * dt;
 		m_viewDirty = true;
+		moved = true;
 	}
 	else if (input::IsKeyPressed(Input::Key::S))
 	{
 		m_position -= m_direction * speed * dt;
 		m_viewDirty = true;
+		moved = true;
 	}
 
 	if (input::IsKeyPressed(Input::Key::A))
 	{
 		m_position -= right * speed * dt;
 		m_viewDirty = true;
+		moved = true;
 	}
 	else if (input::IsKeyPressed(Input::Key::D))
 	{
 		m_position += right * speed * dt;
 		m_viewDirty = true;
+		moved = true;
 	}
 
 	if (input::IsKeyPressed(Input::Key::Q))
 	{
 		m_position -= up * speed * dt;
 		m_viewDirty = true;
+		moved = true;
 	}
 	else if (input::IsKeyPressed(Input::Key::E))
 	{
 		m_position += up * speed * dt;
 		m_viewDirty = true;
+		moved = true;
 	}
 
 	if (mouseDelta.x != 0.0f || mouseDelta.y != 0.0f)
@@ -81,13 +87,14 @@ bool Camera::onUpdate(float dt)
 
 		m_direction = glm::rotate(orientation, m_direction);
 		m_viewDirty = true;
+		moved = true;
 	}
 	if (m_viewDirty)
 	{
 		UpdateViewMatrix();
 		UpdateRayDirection();
 	}
-	return m_viewDirty;
+	return moved;
 }
 
 void Camera::Resize(uint32_t width, uint32_t height)

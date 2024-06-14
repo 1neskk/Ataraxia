@@ -10,24 +10,46 @@ public:
     CUDARayTracer()
         : m_camera(45.0f, 0.1f, 100.0f)
     {
-		Material& m1 = m_scene.materials.emplace_back();
-		m1.albedo = { 1.0f, 0.0f, 0.0f };
-		m1.diffuse = 0.3f;
+        Material& mat1 = m_scene.materials.emplace_back();
+        mat1.albedo = { 0.5f, 0.0f, 1.0f };
+        mat1.diffuse = 1.0f;
 
-		Material& m2 = m_scene.materials.emplace_back();
-		m2.albedo = { 0.65f, 0.0f, 1.0f };
-        m2.diffuse = 1.0f;
+        Material& mat2 = m_scene.materials.emplace_back();
+        mat2.albedo = { 0.0f, 0.0f, 0.0f };
+        mat2.diffuse = 0.3f;
+
+        Material& mat3 = m_scene.materials.emplace_back();
+        mat3.albedo = { 0.8f, 0.5f, 0.2f };
+        mat3.diffuse = 0.1f;
+        mat3.emissionColor = mat3.albedo;
+        mat3.emissionIntensity = 20.0f;
 
         {
             Sphere s;
-            s.center = { 0.0f, 0.0f, -3.0f };
+            s.center = { 0.0f, 0.0f, 0.0f };
             s.radius = 1.0f;
             s.id = 0;
-            m_scene.spheres.emplace_back(s);
+            m_scene.spheres.push_back(s);
+        }
+
+        {
+            Sphere s;
+            s.center = { 0.0f, -101.0f, 0.0f };
+            s.radius = 100.0f;
+            s.id = 1;
+            m_scene.spheres.push_back(s);
+        }
+
+        {
+            Sphere s;
+            s.center = { 32.4f, 3.8f, -32.1f };
+            s.radius = 20.3f;
+            s.id = 2;
+            m_scene.spheres.push_back(s);
         }
     }
 
-    virtual void onUpdate(float ts) override
+    virtual void onUpdate(const float ts) override
     {
         if (m_camera.onUpdate(ts))
             m_renderer.resetFrameIndex();
@@ -72,10 +94,12 @@ public:
 	        ImGui::PushID(i);
 			ImGui::Text("Material %d", i);
 
-			ImGui::ColorEdit3("Albedo", &m_scene.materials[i].albedo[0]);
+			ImGui::ColorEdit3("Albedo", reinterpret_cast<float*>(&m_scene.materials[i].albedo));
 			ImGui::DragFloat("Diffuse", &m_scene.materials[i].diffuse, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Specular", &m_scene.materials[i].specular, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Shininess", &m_scene.materials[i].shininess, 0.01f, 0.0f, 1.0f);
+            ImGui::ColorEdit3("Emission Color", reinterpret_cast<float*>(&m_scene.materials[i].emissionColor));
+			ImGui::DragFloat("Emission Intensity", &m_scene.materials[i].emissionIntensity, 0.05f, 0.0f, FLT_MAX);
 
 			ImGui::Separator();
 			ImGui::PopID();

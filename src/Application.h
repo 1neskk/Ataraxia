@@ -27,7 +27,7 @@ struct GLFWwindow;
 struct Specs
 {
     std::string name = "Vulkan Application";
-    uint32_t width = 1600, height = 900;
+    uint32_t width = 1920, height = 1080;
 };
 
 class Application
