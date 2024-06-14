@@ -33,4 +33,3 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 - [x] Material system
 - [ ] Texture mapping
 - [ ] HDR
-- [ ] Shadows
