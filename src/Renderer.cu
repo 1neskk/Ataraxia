@@ -226,7 +226,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
     uint32_t seed = x + y * width;
 	seed *= frameIndex;
 
-    constexpr int bounces = 10;
+    constexpr int bounces = 50;
 
     for (int i = 0; i < bounces; i++)
     {
@@ -235,7 +235,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 		HitRecord ht = traceRay(ray, spheres, numSpheres);
         if (ht.t < 0.0f)
         {
-#define SKY_LIGHT 1
+#define SKY_LIGHT 0
 #if SKY_LIGHT
             glm::vec3 missColor(0.6f, 0.7f, 0.9f);
 			light += missColor * throughput;
@@ -249,11 +249,38 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
         const auto& [center, radius, id] = spheres[ht.id];
 		const Material& mat = materials[id];
 
-		throughput *= mat.albedo;
-        light += mat.getEmission();
+		light += mat.getEmission() * throughput;
 
-		ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
-        ray.direction = glm::normalize(ht.worldNormal + Random::Random::PcgInUnitSphere(seed));
+        if (mat.diffuse > 0.0f)
+        {
+            ray.direction = glm::normalize(ht.worldNormal + Random::Random::PcgInUnitSphere(seed));
+			throughput *= mat.albedo * mat.diffuse;
+        }
+
+        if (mat.specular > 0.0f)
+        {
+			ray.direction = glm::reflect(ray.direction, ht.worldNormal) + Random::Random::PcgInUnitSphere(seed) * mat.shininess;
+			throughput *= mat.albedo * mat.specular;
+        }
+
+        if (mat.transparency > 0.0f)
+        {
+			bool outside = glm::dot(ray.direction, ht.worldNormal) < 0.0f;
+			glm::vec3 bias = 0.0001f * ht.worldNormal;
+			float eta = outside ? 1.0f / mat.ior : mat.ior;
+
+			glm::vec3 refractionDir = glm::refract(ray.direction, ht.worldNormal, eta);
+			if (glm::length(refractionDir) == 0.0f)
+			{
+				refractionDir = glm::reflect(ray.direction, ht.worldNormal);
+			}
+
+			ray.origin = outside ? (ht.worldPos - bias) : (ht.worldPos + bias);
+            ray.direction = refractionDir;
+
+			throughput *= mat.albedo * mat.transparency;
+        }
+        ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
     }
     return { light, 1.0f };
 }
