@@ -1,6 +1,6 @@
 # CUDARayTracer
 
-![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/848d0f6f-6f14-4836-822f-560e018a7e3f)
+![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/d67e916a-fd9f-408a-bbd2-a90c7726eb8b)
 
 This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [Dear ImGui](https://github.com/ocornut/imgui) and [stb](https://github.com/nothings/stb)
 
@@ -31,3 +31,6 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 
 #### To Do
 - [ ] Material system
+- [ ] Texture mapping
+- [ ] HDR
+- [ ] Shadows

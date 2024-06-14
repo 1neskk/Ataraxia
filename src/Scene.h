@@ -25,13 +25,18 @@ struct Material
 	float specular{ 0.0f };
 	float shininess{ 0.0f };
 
+	glm::vec3 emissionColor{ 0.0f };
+	float emissionIntensity = 0.0f;
+
 	int id = 0;
+
+	__host__ __device__ glm::vec3 getEmission() const { return emissionColor * emissionIntensity; }
 };
 
-struct Light
+struct Settings
 {
-	glm::vec3 position;
-	glm::vec3 intensity;
+	bool accumulation = true;
+	bool skyLight = false;
 };
 
 struct Scene
