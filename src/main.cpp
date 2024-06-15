@@ -27,12 +27,12 @@ public:
         Material& mat4 = m_scene.materials.emplace_back();
         mat4.albedo = { 1.0f, 1.0f, 1.0f };
         mat4.diffuse = { 0.0f };
-        mat4.specular = 0.8f;
+        mat4.reflection = 0.8f;
         mat4.shininess = 0.1f;
 
         {
             Sphere s;
-            s.center = { -3.0f, 0.0f, -1.5f };
+            s.center = { 0.0f, 0.0f, 0.0f };
             s.radius = 1.0f;
             s.id = 0;
             m_scene.spheres.push_back(s);
@@ -114,8 +114,9 @@ public:
 			ImGui::DragFloat("Diffuse", &m_scene.materials[i].diffuse, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Specular", &m_scene.materials[i].specular, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Shininess", &m_scene.materials[i].shininess, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("Reflectivity", &m_scene.materials[i].reflection, 0.01f, 0.0f, 1.0f);
             ImGui::DragFloat("Transparency", &m_scene.materials[i].transparency, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Index of refraction", &m_scene.materials[i].ior, 0.01f, 0.0f, 1.0f);
+            ImGui::DragFloat("Index of refraction", &m_scene.materials[i].ior, 0.01f, 0.0f, 2.0f);
             ImGui::ColorEdit3("Emission Color", reinterpret_cast<float*>(&m_scene.materials[i].emissionColor));
 			ImGui::DragFloat("Emission Intensity", &m_scene.materials[i].emissionIntensity, 0.05f, 0.0f, FLT_MAX);
 

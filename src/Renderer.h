@@ -34,7 +34,7 @@ public:
 	Settings& getSettings() { return m_settings; }
     void resetFrameIndex() { m_frameIndex = 1; }
 
-    static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);
+	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);
     static __device__ HitRecord rayMiss(const Ray& ray);
     static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
