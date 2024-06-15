@@ -28,6 +28,9 @@ struct Material
 	glm::vec3 emissionColor{ 0.0f };
 	float emissionIntensity = 0.0f;
 
+	float transparency{ 0.0f };
+	float ior{ 1.0f }; // index of refraction
+
 	int id = 0;
 
 	__host__ __device__ glm::vec3 getEmission() const { return emissionColor * emissionIntensity; }

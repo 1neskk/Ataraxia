@@ -1,6 +1,6 @@
-# CUDARayTracer
+# PathTracingEngine
 
-![image](https://github.com/1neskk/CUDARayTracer/assets/113075816/d67e916a-fd9f-408a-bbd2-a90c7726eb8b)
+![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
 
 This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [Dear ImGui](https://github.com/ocornut/imgui) and [stb](https://github.com/nothings/stb)
 
@@ -30,7 +30,6 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 3. Run the resulting solution file: `cd build && msbuild CUDARayTracer.sln /p:Configuration=Release /p:Platform=x64`
 
 #### To Do
-- [ ] Material system
+- [x] Material system
 - [ ] Texture mapping
 - [ ] HDR
-- [ ] Shadows
