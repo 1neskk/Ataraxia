@@ -28,6 +28,7 @@ struct Material
 	glm::vec3 emissionColor{ 0.0f };
 	float emissionIntensity = 0.0f;
 
+	float reflection{ 0.0f };
 	float transparency{ 0.0f };
 	float ior{ 1.0f }; // index of refraction
 

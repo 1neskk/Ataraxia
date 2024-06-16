@@ -5,8 +5,11 @@
 #include "Random.h"
 #include "Renderer.h"
 
+#include <glm/ext/scalar_constants.hpp>
+#include <glm/gtc/constants.hpp>
+
 Renderer::Renderer() : d_spheres_(nullptr), d_materials_(nullptr), d_accumulation_(nullptr), h_imageData_(nullptr),
-						d_imageData_(nullptr), m_frameIndex(1)
+                       d_imageData_(nullptr), m_frameIndex(1)
 {}
 
 Renderer::~Renderer()
@@ -226,7 +229,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
     uint32_t seed = x + y * width;
 	seed *= frameIndex;
 
-    constexpr int bounces = 50;
+	constexpr int bounces = 10; // Max bounces
 
     for (int i = 0; i < bounces; i++)
     {
@@ -254,31 +257,35 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
         if (mat.diffuse > 0.0f)
         {
             ray.direction = glm::normalize(ht.worldNormal + Random::Random::PcgInUnitSphere(seed));
-			throughput *= mat.albedo * mat.diffuse;
+            throughput *= mat.albedo * mat.diffuse;
         }
 
         if (mat.specular > 0.0f)
         {
-			ray.direction = glm::reflect(ray.direction, ht.worldNormal) + Random::Random::PcgInUnitSphere(seed) * mat.shininess;
-			throughput *= mat.albedo * mat.specular;
+            ray.direction = glm::reflect(ray.direction, ht.worldNormal);
+            throughput *= mat.albedo * mat.specular;
+        }
+
+        // Glossy
+        if (mat.reflection > 0.0f)
+        {
+            ray.direction = glm::reflect(ray.direction, ht.worldNormal) + Random::Random::PcgInUnitSphere(seed) * mat.shininess;
+            throughput *= mat.albedo * mat.reflection;
         }
 
         if (mat.transparency > 0.0f)
         {
-			bool outside = glm::dot(ray.direction, ht.worldNormal) < 0.0f;
-			glm::vec3 bias = 0.0001f * ht.worldNormal;
-			float eta = outside ? 1.0f / mat.ior : mat.ior;
-
-			glm::vec3 refractionDir = glm::refract(ray.direction, ht.worldNormal, eta);
-			if (glm::length(refractionDir) == 0.0f)
-			{
-				refractionDir = glm::reflect(ray.direction, ht.worldNormal);
-			}
-
-			ray.origin = outside ? (ht.worldPos - bias) : (ht.worldPos + bias);
-            ray.direction = refractionDir;
-
-			throughput *= mat.albedo * mat.transparency;
+            const float eta = 1.0f / mat.ior;
+            const float cosi = -glm::dot(ray.direction, ht.worldNormal);
+            if (const float k = 1.0f - eta * eta * (1.0f - cosi * cosi) < 0.0f)
+            {
+                ray.direction = glm::reflect(ray.direction, ht.worldNormal);
+            }
+            else
+            {
+                ray.direction = glm::normalize(ray.direction * eta + ht.worldNormal * (eta * cosi - sqrt(k)));
+            }
+            throughput *= mat.albedo * mat.transparency;
         }
         ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
     }
