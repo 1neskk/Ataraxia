@@ -46,6 +46,7 @@ private:
 
 	glm::vec2 m_lastMousePos{ 0.0f };
 	uint32_t m_width = 0, m_height = 0;
+
 	bool m_viewDirty = true;
 	bool m_projectionDirty = true;
 };

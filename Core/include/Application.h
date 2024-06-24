@@ -6,6 +6,7 @@
 #include <functional>
 
 #include "imgui.h"
+#include "GLFW/glfw3.h"
 #include "vulkan/vulkan.h"
 
 class Layer
@@ -27,7 +28,8 @@ struct GLFWwindow;
 struct Specs
 {
     std::string name = "Vulkan Application";
-    uint32_t width = 1920, height = 1080;
+    int width = 1600, height = 900;
+	int windowPosX = 0, windowPosY = 300;
 };
 
 class Application
@@ -56,6 +58,7 @@ public:
 
     void close();
     float getTime();
+    void toggleFullscreen();
 
     GLFWwindow* getWindow() { return m_window; }
 
@@ -79,6 +82,10 @@ private:
     Specs m_specs;
     GLFWwindow* m_window = nullptr;
     bool m_running = true;
+
+	bool m_fullscreen = true;
+	GLFWmonitor* m_monitor = nullptr;
+	const GLFWvidmode* m_videoMode = nullptr;
 
     float m_timeStep = 0.0f;
     float m_frameTime = 0.0f;

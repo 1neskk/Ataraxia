@@ -12,23 +12,25 @@ public:
     {
         Material& mat1 = m_scene.materials.emplace_back();
         mat1.albedo = { 0.5f, 0.0f, 1.0f };
-        mat1.diffuse = 1.0f;
+        mat1.roughness = 1.0f;
 
         Material& mat2 = m_scene.materials.emplace_back();
         mat2.albedo = { 1.0f, 0.0f, 0.0f };
-        mat2.diffuse = 0.3f;
-
-        Material& mat3 = m_scene.materials.emplace_back();
-        mat3.albedo = { 0.8f, 0.5f, 0.2f };
-        mat3.diffuse = 0.1f;
-        mat3.emissionColor = mat3.albedo;
-        mat3.emissionIntensity = 20.0f;
+        mat2.roughness = 0.3f;
 
         Material& mat4 = m_scene.materials.emplace_back();
-        mat4.albedo = { 1.0f, 1.0f, 1.0f };
-        mat4.diffuse = { 0.0f };
-        mat4.reflection = 0.8f;
-        mat4.shininess = 0.1f;
+		mat4.albedo = { 0.8f, 0.8f, 0.8f };
+		mat4.roughness = 0.58f;
+		mat4.metallic = 1.0f;
+		mat4.F0 = { 0.96f, 0.96f, 0.97f };
+
+        {
+            Light l;
+			l.intensity = 1.0f;
+			l.color = { 1.0f, 1.0f, 1.0f };
+			l.position = { 10.0f, 10.0f, 0.0f };
+			m_scene.lights.push_back(l);
+        }
 
         {
             Sphere s;
@@ -48,17 +50,9 @@ public:
 
         {
             Sphere s;
-            s.center = { 32.4f, 3.8f, -32.1f };
-            s.radius = 20.3f;
-            s.id = 2;
-            m_scene.spheres.push_back(s);
-        }
-
-        {
-            Sphere s;
             s.center = { -2.0f, 0.0f, 2.0f };
             s.radius = 1.0f;
-            s.id = 3;
+            s.id = 2;
             m_scene.spheres.push_back(s);
         }
     }
@@ -111,18 +105,28 @@ public:
 			ImGui::Text("Material %d", i);
 
 			ImGui::ColorEdit3("Albedo", reinterpret_cast<float*>(&m_scene.materials[i].albedo));
-			ImGui::DragFloat("Diffuse", &m_scene.materials[i].diffuse, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Specular", &m_scene.materials[i].specular, 0.01f, 0.0f, 1.0f);
-			ImGui::DragFloat("Shininess", &m_scene.materials[i].shininess, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Reflectivity", &m_scene.materials[i].reflection, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Transparency", &m_scene.materials[i].transparency, 0.01f, 0.0f, 1.0f);
-            ImGui::DragFloat("Index of refraction", &m_scene.materials[i].ior, 0.01f, 0.0f, 2.0f);
-            ImGui::ColorEdit3("Emission Color", reinterpret_cast<float*>(&m_scene.materials[i].emissionColor));
-			ImGui::DragFloat("Emission Intensity", &m_scene.materials[i].emissionIntensity, 0.05f, 0.0f, FLT_MAX);
+			ImGui::DragFloat("Roughness", &m_scene.materials[i].roughness, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat("Metallic", &m_scene.materials[i].metallic, 0.01f, 0.0f, 1.0f);
+			ImGui::DragFloat3("F0", &m_scene.materials[i].F0[0], 0.01f, 0.0f, 1.0f);
 
 			ImGui::Separator();
 			ImGui::PopID();
 		}
+		ImGui::End();
+
+		ImGui::Begin("Light settings");
+        for (size_t i = 0; i < m_scene.lights.size(); i++)
+        {
+			ImGui::PushID(i);
+			ImGui::Text("Light %d", i);
+
+			ImGui::DragFloat3("Position", &m_scene.lights[i].position[0], 0.01f);
+			ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_scene.lights[i].color));
+			ImGui::DragFloat("Intensity", &m_scene.lights[i].intensity, 0.01f, 0.0f, FLT_MAX);
+
+			ImGui::Separator();
+			ImGui::PopID();
+        }
 		ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
@@ -173,6 +177,8 @@ Application* createApplication(int argc, char** argv)
 		{
 	         if (ImGui::MenuItem("Exit"))
 	             app->close();
+			 if (ImGui::MenuItem("Fullscreen", "F11"))
+				app->toggleFullscreen();
 	         ImGui::EndMenu();
 		}
 	});

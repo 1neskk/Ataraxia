@@ -6,11 +6,12 @@
 
 #include "Camera.h"
 #include "input/Input.h"
+#include "Random.h"
 
 typedef Input::Input input;
 
 Camera::Camera(float fov, float nearClip, float farClip)
-	: m_fov(fov), m_nearClip(nearClip), m_farClip(farClip)
+	: m_fov(fov), m_nearClip(nearClip), m_farClip(farClip), m_width(1600), m_height(900)
 {
 	m_direction = glm::vec3(0.0f, 0.0f, -1.0f);
 	m_position = glm::vec3(0.0f, 0.0f, 3.0f);
@@ -99,11 +100,11 @@ bool Camera::onUpdate(float dt)
 
 void Camera::Resize(uint32_t width, uint32_t height)
 {
-    if (width == 0 || height == 0)
-    {
-        std::cerr << "Error: Width or height cannot be zero.\n";
-        return;
-    }
+	if (width == 0 || height == 0)
+	{
+		std::cerr << "Error: Width or height cannot be zero.\n";
+		return;
+	}
 
 	if (width == m_width && height == m_height)
 		return;
@@ -125,12 +126,12 @@ void Camera::UpdateProjectionMatrix()
 {
 	if (m_projectionDirty)
 	{
-        float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
-        if (aspectRatio <= std::numeric_limits<float>::epsilon())
-        {
-            std::cerr << "Error: invalid Aspect ratio\n";
-            return;
-        }
+		float aspectRatio = static_cast<float>(m_width) / static_cast<float>(m_height);
+		if (aspectRatio <= std::numeric_limits<float>::epsilon())
+		{
+			std::cerr << "Error: invalid Aspect ratio\n";
+			return;
+		}
 
 		m_projectionMatrix = glm::perspective(glm::radians(m_fov), aspectRatio , m_nearClip, m_farClip);
 		m_inverseProjectionMatrix = glm::inverse(m_projectionMatrix);
