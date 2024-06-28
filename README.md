@@ -15,21 +15,21 @@ This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/gl
 
 ### Linux
 
-1. Clone recursively: `git clone --recursive https://github.com/1neskk/CUDARayTracer`
+1. Clone recursively: `git clone --recursive https://github.com/1neskk/PathTracingEngine`
 
 2. Build the project: `make build`
 
-3. Run the resulting executable: `./build/CUDARayTracer`
+3. Run the resulting executable: `./build/PathTracingEngine`
 
 ### Windows
 
-1. Clone recursively: `git clone --recursive https://github.com/1neskk/CUDARayTracer`
+1. Clone recursively: `git clone --recursive https://github.com/1neskk/PathTracingEngine`
 
-2. Build the project: `mkdir build && cmake -B build -G "Visual Studio 17 2022" -A x64 `
+2. Build the project: `mkdir build && cmake -B build -A x64 `
 
-3. Run the resulting solution file: `cd build && msbuild CUDARayTracer.sln /p:Configuration=Release /p:Platform=x64`
+3. Open the resulting solution file: `cd build && start PathTracingEngine.sln`
 
 #### To Do
 - [x] Material system
-- [ ] Texture mapping
-- [ ] HDR
+- [ ] Environment mapping
+- [ ] HDR lighting
