@@ -1,6 +1,6 @@
 # PathTracingEngine
 
-![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
+![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/42991693-2374-4779-81e7-b2159f28cf6b)
 
 This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [Dear ImGui](https://github.com/ocornut/imgui) and [stb](https://github.com/nothings/stb)
 
