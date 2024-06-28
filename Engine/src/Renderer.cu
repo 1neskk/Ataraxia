@@ -205,7 +205,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 	uint32_t seed = x + y * width;
 	seed *= frameIndex;
 
-	constexpr int bounces = 5; // Max bounces
+	constexpr int bounces = 10; // Max bounces
 
 	for (int i = 0; i < bounces; i++)
 	{
