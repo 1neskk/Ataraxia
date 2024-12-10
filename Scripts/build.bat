@@ -1,4 +1,4 @@
 @echo off
 pushd %~dp0
-python setup.py
+python build.py
 PAUSE

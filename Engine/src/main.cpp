@@ -4,10 +4,10 @@
 #include "Renderer.h"
 #include "Timer.h"
 
-class PathTracingEngine final : public Layer
+class Ataraxia final : public Layer
 {
 public:
-    PathTracingEngine()
+    Ataraxia()
         : m_camera(45.0f, 0.1f, 100.0f)
     {
         Material& mat1 = m_scene.materials.emplace_back();
@@ -167,10 +167,10 @@ private:
 Application* createApplication(int argc, char** argv)
 {
     Specs spec;
-    spec.name = "Path Tracing Engine";
+    spec.name = "Ataraxia";
 
 	auto app = new Application(spec);
-    app->pushLayer<PathTracingEngine>();
+    app->pushLayer<Ataraxia>();
 	app->setMenubarCallback([app]()
 	{
 		if (ImGui::BeginMenu("File"))

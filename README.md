@@ -1,35 +1,99 @@
-# PathTracingEngine
+# Ataraxia Engine
+This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan. It is still in the early stages of development, in addition to the core rendering system, it also includes a scene system, a camera system, and a UI system. It is built with the intention of being a learning experience for me, and to serve as a foundation for future projects.
+
+## Table of Contents
+- [Showcase](#showcase)
+- [Features](#features)
+- [Building](#building)
+- [Usage](#usage)
+- [License](#license)
+- [Contributing](#contributing)
+
+## Showcase
 
 ![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/42991693-2374-4779-81e7-b2159f28cf6b)
 
-This project uses thirdparty libraries such as [GLFW](https://github.com/glfw/glfw), [GLM](https://github.com/g-truc/glm), [Dear ImGui](https://github.com/ocornut/imgui) and [stb](https://github.com/nothings/stb)
+![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
 
-**Officially supports Windows 10/11 with Visual Studio 2022 and Linux (tested on the LTS kernel with Wayland)**
+## Features
 
-## Requirements
-- [Vulkan SDK](https://vulkan.lunarg.com/)
-- NVIDIA GPU
-- [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit)
+### Core Rendering
+- Real-time path tracing using CUDA
+- Physically based rendering (PBR) with Cook-Torrance BRDF
+- Support for diffuse and metallic materials with configurable properties:
+  - Albedo
+  - Roughness 
+  - Metallic factor
+  - Fresnel reflection (F0)
+- Multiple importance sampling for efficient light sampling
+- Cosine weighted hemisphere sampling
+- GGX microfacet distribution
+- Accumulation buffer for progressive refinement
 
-## Get Started
+### Scene System
+- Sphere primitive support with configurable:
+  - Position
+  - Radius
+  - Material assignment
+- Point light system with:
+  - Position
+  - Color
+  - Intensity
+- Interactive camera with:
+  - WASD movement
+  - Mouse look
+  - FOV control
+  - Near/far clip planes
 
-### Linux
+### Technical Details
+- Hybrid rendering pipeline using Vulkan for display and CUDA for compute
+- Multi-threaded ray direction computation
+- ImGui-based UI for real-time parameter tuning
+- GLFW windowing system
+- GLM math library integration
 
-1. Clone recursively: `git clone --recursive https://github.com/1neskk/PathTracingEngine`
+### Performance
+- Parallel ray tracing on GPU
+- Configurable bounce depth
+- Frame accumulation for noise reduction
+- Real-time FPS counter and render time display
 
-2. Build the project: `make build`
+## Building
 
-3. Run the resulting executable: `./build/PathTracingEngine`
+**Currently only supports Windows 10/11 with Visual Studio 2022, to be tested on Linux.**
 
-### Windows
+Requires:
+- CUDA Toolkit
+- Vulkan SDK
+- GLFW
+- GLM
+- ImGui
 
-1. Clone recursively: `git clone --recursive https://github.com/1neskk/PathTracingEngine`
+#### Windows
 
-2. Build the project: `mkdir build && cmake -B build -A x64 `
+1. Clone recursively: `git clone --recursive https://github.com/1neskk/Ataraxia`
 
-3. Open the resulting solution file: `cd build && start PathTracingEngine.sln`
+2. Run the dependency installer if needed: `Scripts/dependencies.bat`
 
-#### To Do
-- [x] Material system
-- [ ] Environment mapping
-- [ ] HDR lighting
+3. Run the build script: `Scripts/build.bat`
+
+4. Open the resulting solution file: `cd build && start Ataraxia.sln`
+
+
+## Usage
+
+The engine provides an interactive viewport where you can:
+- Move the camera using WASD keys and right mouse button
+- Adjust material properties in real-time
+- Configure light parameters
+- Toggle accumulation for higher quality renders
+- Reset frame accumulation when needed
+- Monitor performance metrics
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request.

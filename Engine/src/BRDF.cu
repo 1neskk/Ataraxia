@@ -1,5 +1,4 @@
 #include "BRDF.h"
-
 #include "Random.h"
 
 __device__ glm::vec3 BRDF::lambertian(const glm::vec3& albedo)
