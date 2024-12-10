@@ -2,18 +2,12 @@
 This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan. It is still in the early stages of development, in addition to the core rendering system, it also includes a scene system, a camera system, and a UI system. It is built with the intention of being a learning experience for me, and to serve as a foundation for future projects.
 
 ## Table of Contents
-- [Showcase](#showcase)
 - [Features](#features)
+- [Showcase](#showcase)
 - [Building](#building)
 - [Usage](#usage)
 - [License](#license)
 - [Contributing](#contributing)
-
-## Showcase
-
-![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/42991693-2374-4779-81e7-b2159f28cf6b)
-
-![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
 
 ## Features
 
@@ -57,6 +51,14 @@ This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan
 - Configurable bounce depth
 - Frame accumulation for noise reduction
 - Real-time FPS counter and render time display
+
+## Showcase
+
+![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/42991693-2374-4779-81e7-b2159f28cf6b)
+
+![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
+
+---
 
 ## Building
 
