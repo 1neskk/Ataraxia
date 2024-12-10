@@ -68,5 +68,15 @@ namespace Random
 			seed = PcgHash(seed);
 			return static_cast<float>(seed) / static_cast<float>(UINT32_MAX);
 		}
+
+		__device__ static glm::vec2 PcgInUnitDisk(uint32_t& seed)
+		{
+			glm::vec2 p;
+			do
+			{
+				p = 2.0f * glm::vec2(PcgFloat(seed), PcgFloat(seed)) - glm::vec2(1.0f, 1.0f);
+			} while (glm::dot(p, p) >= 1.0f);
+			return p;
+		}
 	};
 }

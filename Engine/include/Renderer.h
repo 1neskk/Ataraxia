@@ -2,10 +2,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
-
-#include <glm/glm.hpp>
 
 #include "Scene.h"
 #include "Image.h"
@@ -38,8 +34,8 @@ public:
     static __device__ HitRecord rayMiss(const Ray& ray);
     static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
-        size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, uint32_t frameIndex);
-
+        size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
+        const Light* lights, size_t numLights);
 private:
 	void allocateDeviceMemory(const Scene& scene);
 	void freeDeviceMemory();
@@ -48,6 +44,7 @@ private:
     const Scene* m_scene = nullptr;
 	Sphere* d_spheres_ = nullptr; // device spheres
 	Material* d_materials_ = nullptr; // device materials
+	Light* d_lights_ = nullptr; // device lights
 
     glm::vec4* d_accumulation_ = nullptr; // device accumulation buffer
 
@@ -62,7 +59,8 @@ private:
 };
 
 __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
-    size_t numSpheres, const DeviceCamera d_camera, const Material* materials, glm::vec4* accumulation, uint32_t frameIndex);
+    size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
+    uint32_t frameIndex, const Light* lights, size_t numLights);
 
 namespace colorUtils
 {

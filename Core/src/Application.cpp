@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include "imgui/Roboto-Regular.embed"
+#include "backends/imgui_impl_glfw.cpp"
 
 extern bool g_bRunning;
 
@@ -597,10 +598,27 @@ void Application::run()
 
 		float time = getTime();
 		m_frameTime = time - m_lastFrameTime;
-		m_timeStep = std::min(m_frameTime, 0.0333f);
+		m_timeStep = (0.0333f < m_frameTime) ? 0.0333f : m_frameTime;
 		m_lastFrameTime = time;
 	}
 
+}
+
+void Application::toggleFullscreen()
+{
+	GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+	const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+	if (m_fullscreen)
+	{
+		glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+	}
+	else
+	{
+		glfwSetWindowMonitor(m_window, nullptr, 100, 100, m_specs.width, m_specs.height, mode->refreshRate);
+	}
+
+	m_fullscreen = !m_fullscreen;
+	g_SwapChainRebuild = true;
 }
 
 void Application::close()

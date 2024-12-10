@@ -18,23 +18,21 @@ struct Sphere
 	int id = 0;
 };
 
+struct Light
+{
+	glm::vec3 position;
+	glm::vec3 color;
+	float intensity;
+};
+
 struct Material
 {
 	glm::vec3 albedo{ 1.0f };
-	float diffuse{ 1.0f };
-	float specular{ 0.0f };
-	float shininess{ 0.0f };
-
-	glm::vec3 emissionColor{ 0.0f };
-	float emissionIntensity = 0.0f;
-
-	float reflection{ 0.0f };
-	float transparency{ 0.0f };
-	float ior{ 1.0f }; // index of refraction
+	float roughness = 0.0f;
+	float metallic = 0.0f;
+	glm::vec3 F0{ 0.04f };
 
 	int id = 0;
-
-	__host__ __device__ glm::vec3 getEmission() const { return emissionColor * emissionIntensity; }
 };
 
 struct Settings
@@ -47,4 +45,5 @@ struct Scene
 {
 	std::vector<Sphere> spheres;
 	std::vector<Material> materials;
+	std::vector<Light> lights;
 };
