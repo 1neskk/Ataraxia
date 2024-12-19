@@ -54,9 +54,9 @@ This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan
 
 ## Showcase
 
-![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/42991693-2374-4779-81e7-b2159f28cf6b)
+![Screenshot 2024-12-17 025805](https://github.com/user-attachments/assets/7485fcab-acbe-4df4-838b-8e5dbca2510b)
 
-![image](https://github.com/1neskk/PathTracingEngine/assets/113075816/56cf3421-10cb-4393-9a2b-2d7fd6d22c7c)
+![Screenshot 2024-12-16 012411](https://github.com/user-attachments/assets/faf609f1-248b-4d8e-86bd-60c1fb726a5c)
 
 ---
 
