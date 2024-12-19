@@ -11,8 +11,8 @@ public:
 	bool onUpdate(float dt);
 	void Resize(uint32_t width, uint32_t height);
 
-	void allocateDevice(DeviceCamera& deviceCamera);
-	void freeDevice(DeviceCamera& deviceCamera);
+	void allocateDevice(DeviceCamera& deviceCamera) const;
+	static void freeDevice(DeviceCamera& deviceCamera);
 
 	const glm::mat4& getViewMatrix() const { return m_viewMatrix; }
 	const glm::mat4& getProjectionMatrix() const { return m_projectionMatrix; }

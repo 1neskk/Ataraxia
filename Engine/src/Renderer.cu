@@ -10,6 +10,21 @@
 
 #include <glm/ext/scalar_constants.hpp>
 
+#define CUDA_CHECK(call) \
+	do \
+	{ \
+		cudaError_t err = call; \
+		if (err != cudaSuccess) \
+		{ \
+			std::cerr << "CUDA error: " << cudaGetErrorString(err) << " at " << __FILE__ << ":" << __LINE__ << "\n"; \
+			std::exit(EXIT_FAILURE); \
+		} \
+	} while (0)
+
+__global__ void kernelRender(uint32_t width, uint32_t height, uint32_t * imageData, const Sphere * spheres,
+	size_t numSpheres, const DeviceCamera d_camera, const Material * materials, size_t numMaterials, glm::vec4 * accumulation,
+	uint32_t frameIndex, const Light * lights, size_t numLights, Settings settings);
+
 Renderer::Renderer() : d_spheres_(nullptr), d_materials_(nullptr),d_lights_(nullptr), d_accumulation_(nullptr), h_imageData_(nullptr),
                        d_imageData_(nullptr), m_frameIndex(1)
 {}
@@ -17,10 +32,68 @@ Renderer::Renderer() : d_spheres_(nullptr), d_materials_(nullptr),d_lights_(null
 Renderer::~Renderer()
 {
 	cudaFree(d_imageData_);
-	cudaFree(d_accumulation_);
 	freeDeviceMemory();
 
     delete[] h_imageData_;
+}
+
+void Renderer::allocateDeviceMemory(const Scene& scene)
+{
+#ifdef _DEBUG
+	CUDA_CHECK(cudaFree(d_spheres_));
+	CUDA_CHECK(cudaMalloc(&d_spheres_, scene.spheres.size() * sizeof(Sphere)));
+	CUDA_CHECK(cudaMemcpy(d_spheres_, scene.spheres.data(), scene.spheres.size() * sizeof(Sphere), cudaMemcpyHostToDevice));
+	
+	CUDA_CHECK(cudaFree(d_materials_));
+	CUDA_CHECK(cudaMalloc(&d_materials_, scene.materials.size() *sizeof(Material)));
+	CUDA_CHECK(cudaMemcpy(d_materials_, scene.materials.data(), scene.materials.size() * sizeof(Material), cudaMemcpyHostToDevice));
+
+	CUDA_CHECK(cudaFree(d_lights_));
+	CUDA_CHECK(cudaMalloc(&d_lights_, scene.lights.size() * sizeof(Light)));
+	CUDA_CHECK(cudaMemcpy(d_lights_, scene.lights.data(), scene.lights.size() * sizeof(Light), cudaMemcpyHostToDevice));
+#else
+	cudaFree(d_spheres_);
+	cudaMalloc(&d_spheres_, scene.spheres.size() * sizeof(Sphere));
+	cudaMemcpy(d_spheres_, scene.spheres.data(), scene.spheres.size() * sizeof(Sphere), cudaMemcpyHostToDevice);
+
+	cudaFree(d_materials_);
+	cudaMalloc(&d_materials_, scene.materials.size() * sizeof(Material));
+	cudaMemcpy(d_materials_, scene.materials.data(), scene.materials.size() * sizeof(Material), cudaMemcpyHostToDevice);
+
+	cudaFree(d_lights_);
+	cudaMalloc(&d_lights_, scene.lights.size() * sizeof(Light));
+	cudaMemcpy(d_lights_, scene.lights.data(), scene.lights.size() * sizeof(Light), cudaMemcpyHostToDevice);
+#endif
+
+}
+
+void Renderer::freeDeviceMemory()
+{
+#ifdef _DEBUG
+	CUDA_CHECK(cudaFree(d_spheres_));
+	d_spheres_ = nullptr;
+
+	CUDA_CHECK(cudaFree(d_materials_));
+	d_materials_ = nullptr;
+
+	CUDA_CHECK(cudaFree(d_lights_));
+	d_lights_ = nullptr;
+
+	CUDA_CHECK(cudaFree(d_accumulation_));
+	d_accumulation_ = nullptr;
+#else
+	cudaFree(d_spheres_);
+	d_spheres_ = nullptr;
+
+	cudaFree(d_materials_);
+	d_materials_ = nullptr;
+
+	cudaFree(d_lights_);
+	d_lights_ = nullptr;
+
+	cudaFree(d_accumulation_);
+	d_accumulation_ = nullptr;
+#endif
 }
 
 void Renderer::onResize(uint32_t width, uint32_t height)
@@ -28,28 +101,81 @@ void Renderer::onResize(uint32_t width, uint32_t height)
 	if (m_image && m_image->getWidth() == width && m_image->getHeight() == height)
 		return;
 
+#ifdef _DEBUG
+	try
+	{
+		m_image = std::make_shared<Image>(width, height, ImageType::RGBA);
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "Failed to create image: " << e.what() << "\n";
+		return;
+	}
+
+	if (!m_image)
+	{
+		std::cerr << "Failed to create image" << "\n";
+		return;
+	}
+
+#else
 	m_image = std::make_shared<Image>(width, height, ImageType::RGBA);
+#endif
 
-    delete[] h_imageData_;
-    h_imageData_ = new uint32_t[width * height];
+	delete[] h_imageData_;
+	h_imageData_ = nullptr;
 
-    cudaFree(d_imageData_);
-    cudaMalloc(&d_imageData_, static_cast<unsigned long long>(width) * height * sizeof(uint32_t));
+#ifdef _DEBUG
+	try
+	{
+		h_imageData_ = new uint32_t[width * height];
+	}
+	catch (const std::bad_alloc& e)
+	{
+		std::cerr << "Failed to allocate host image data: " << e.what() << "\n";
+		return;
+	}
+
+	CUDA_CHECK(cudaFree(d_imageData_));
+	cudaError_t err = cudaMalloc(&d_imageData_, static_cast<unsigned long long>(width) * height * sizeof(uint32_t));
+	if (err != cudaSuccess)
+	{
+		std::cerr << "Failed to allocate device image data: " << cudaGetErrorString(err) << "\n";
+		delete[] h_imageData_;
+		h_imageData_ = nullptr;
+		return;
+	}
+
+	CUDA_CHECK(cudaFree(d_accumulation_));
+	err = cudaMalloc(&d_accumulation_, static_cast<unsigned long long>(width) * height * sizeof(glm::vec4));
+	if (err != cudaSuccess)
+	{
+		std::cerr << "Failed to allocate accumulation buffer: " << cudaGetErrorString(err) << "\n";
+		cudaFree(d_imageData_);
+		delete[] h_imageData_;
+		h_imageData_ = nullptr;
+		return;
+	}
+#else
+	h_imageData_ = new uint32_t[width * height];
+
+	cudaFree(d_imageData_);
+	cudaMalloc(&d_imageData_, static_cast<unsigned long long>(width) * height * sizeof(uint32_t));
 
 	cudaFree(d_accumulation_);
 	cudaMalloc(&d_accumulation_, static_cast<unsigned long long>(width) * height * sizeof(glm::vec4));
+#endif
 
-    m_width = width;
-    m_height = height;
-
-    m_frameIndex = 1;
+	m_width = width;
+	m_height = height;
+	m_frameIndex = 1;
 }
 
 void Renderer::Render(Camera& camera, const Scene& scene)
 {
     m_scene = &scene;
 
-	allocateDeviceMemory(scene);
+	allocateDeviceMemory(scene); // TODO: Change device memory allocation to not be done every frame.
 
     if (m_frameIndex == 1)
 		cudaMemset(d_accumulation_, 0, static_cast<unsigned long long>(m_width) * m_height * sizeof(glm::vec4));
@@ -60,12 +186,38 @@ void Renderer::Render(Camera& camera, const Scene& scene)
 	DeviceCamera d_camera;
     camera.allocateDevice(d_camera);
 
-    dim3 blockSize(16, 16);
-    dim3 numBlocks((m_width + blockSize.x - 1) / blockSize.x,
-                   (m_height + blockSize.y - 1) / blockSize.y);
+	cudaDeviceProp deviceProp;
+	cudaGetDeviceProperties(&deviceProp, 0);
+	int minGridSize, optimalBlockSize;
 
-	kernelRender<<<numBlocks, blockSize>>>(m_width, m_height, d_imageData_, d_spheres_, scene.spheres.size(), d_camera,
-        d_materials_, scene.materials.size(), d_accumulation_, m_frameIndex, d_lights_, scene.lights.size());
+#ifdef _DEBUG
+	CUDA_CHECK(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &optimalBlockSize, kernelRender, 0, 0));
+
+	std::cout << "\n======================================\n\n";
+	std::cout << "Optimal block size: " << optimalBlockSize << "\n";
+#else
+	cudaOccupancyMaxPotentialBlockSize(&minGridSize, &optimalBlockSize, kernelRender, 0, 0);
+#endif
+
+	int blockSizeX = optimalBlockSize / 32;
+	int blockSizeY = optimalBlockSize / 32;
+
+	dim3 blockSize(blockSizeX, blockSizeY);
+	dim3 gridSize((m_width + blockSize.x - 1) / blockSize.x, (m_height + blockSize.y - 1) / blockSize.y);
+
+#ifdef _DEBUG
+	if (blockSize.x * blockSize.y > optimalBlockSize)
+	{
+		std::cerr << "Block size exceeds optimal value; adjust accordingly.\n";
+		return;
+	}
+
+	std::cout << "Grid size: (" << gridSize.x << ", " << gridSize.y << ")\n";
+	std::cout << "Block size: (" << blockSize.x << ", " << blockSize.y << ") | " << blockSize.x * blockSize.y << " Threads per block\n";
+#endif
+
+	kernelRender<<<gridSize, blockSize>>>(m_width, m_height, d_imageData_, d_spheres_, scene.spheres.size(), d_camera,
+        d_materials_, scene.materials.size(), d_accumulation_, m_frameIndex, d_lights_, scene.lights.size(), m_settings);
 
 	cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
@@ -98,40 +250,9 @@ void Renderer::Render(Camera& camera, const Scene& scene)
         m_frameIndex = 1;
 }
 
-void Renderer::allocateDeviceMemory(const Scene& scene)
-{
-	cudaFree(d_spheres_);
-	cudaMalloc(&d_spheres_, scene.spheres.size() * sizeof(Sphere));
-	cudaMemcpy(d_spheres_, scene.spheres.data(), scene.spheres.size() * sizeof(Sphere), cudaMemcpyHostToDevice);
-	
-
-	cudaFree(d_materials_);
-	cudaMalloc(&d_materials_, scene.materials.size() *sizeof(Material));
-    cudaMemcpy(d_materials_, scene.materials.data(), scene.materials.size() * sizeof(Material), cudaMemcpyHostToDevice);
-
-	cudaFree(d_lights_);
-	cudaMalloc(&d_lights_, scene.lights.size() * sizeof(Light));
-	cudaMemcpy(d_lights_, scene.lights.data(), scene.lights.size() * sizeof(Light), cudaMemcpyHostToDevice);
-}
-
-void Renderer::freeDeviceMemory()
-{
-	cudaFree(d_spheres_);
-	d_spheres_ = nullptr;
-
-    cudaFree(d_materials_);
-	d_materials_ = nullptr;
-
-	cudaFree(d_lights_);
-	d_lights_ = nullptr;
-
-	cudaFree(d_accumulation_);
-	d_accumulation_ = nullptr;
-}
-
 __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
     size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
-	uint32_t frameIndex, const Light* lights, size_t numLights)
+	uint32_t frameIndex, const Light* lights, size_t numLights, Settings settings)
 {
     const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
     const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -139,7 +260,7 @@ __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageDat
     if (x < width && y < height)
 	{
 		const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, d_camera, materials, numMaterials, frameIndex, lights,
-			numLights);
+			numLights, settings);
 		const uint32_t pixelIndex = x + y * width;
         accumulation[pixelIndex] += color;
 		glm::vec4 finalColor = accumulation[pixelIndex] / static_cast<float>(frameIndex);
@@ -186,12 +307,13 @@ __device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* 
 
 __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
     size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
-	const Light* lights, size_t numLights)
+	const Light* lights, size_t numLights, Settings settings)
 {
 	__shared__ Light sharedLights[10];
 
-	if (threadIdx.x < numLights)
-		sharedLights[threadIdx.x] = lights[threadIdx.x];
+	const uint32_t tid = threadIdx.x + threadIdx.y * blockDim.x;
+	if (tid < numLights && tid < 10)
+		sharedLights[tid] = lights[tid];
 
 	__syncthreads();
 
@@ -205,8 +327,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 	uint32_t seed = x + y * width;
 	seed *= frameIndex;
 
-	constexpr int bounces = 10; // Max bounces
-
+	int bounces = settings.maxBounces;
 	for (int i = 0; i < bounces; i++)
 	{
 		seed += i;
@@ -214,22 +335,19 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 		HitRecord ht = traceRay(ray, spheres, numSpheres);
 		if (ht.t < 0.0f)
 		{
-#define SKY_LIGHT 0
-#if SKY_LIGHT
-			glm::vec3 missColor(0.6f, 0.7f, 0.9f);
-			color += missColor * throughput;
+			if (settings.skyLight)
+			{
+				glm::vec3 missColor(0.6f, 0.7f, 0.9f);
+				color += missColor * throughput;
+			}
 			break;
-#else
-			color += glm::vec3(0.0f);
-			break;
-#endif
 		}
 
 		const auto& [center, radius, id] = spheres[ht.id];
 		const Material* mat = &materials[id];
 
 		glm::vec3 baseReflectivity = glm::mix(mat->F0, mat->albedo, mat->metallic);
-		for (size_t j = 0; j < numLights && j < 10; j++)
+		for (size_t j = 0; j < numLights; j++)
 		{
 			const Light& light = sharedLights[j];
 			glm::vec3 L = light.position - ht.worldPos;
@@ -247,18 +365,17 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 			const glm::vec3 V = -ray.direction;
 			const glm::vec3 N = ht.worldNormal;
 
-			const glm::vec3 diffuse = BRDF::lambertian(mat->albedo);
 			const glm::vec3 specular = BRDF::cookTorrance(mat->albedo, baseReflectivity, mat->metallic, mat->roughness, N, V, L);
-
-			const glm::vec3 brdf = diffuse + specular;
 			const float NdotL = glm::max(glm::dot(N, L), 0.0f);
 
-			color += light.intensity * brdf * NdotL * throughput;
+			color += light.intensity * specular * NdotL * throughput;
 		}
 
 		throughput *= mat->albedo;
-
 		ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
+
+		if (glm::length(throughput) < 0.01f)
+			break;
 
 		if (mat->metallic > 0.0f)
 			ray.direction = BRDF::sampleGGX(ht.worldNormal, mat->roughness, seed);

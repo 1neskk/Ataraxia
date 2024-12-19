@@ -1,4 +1,5 @@
 #include <thread>
+#include <cuda_runtime.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -7,6 +8,15 @@
 #include "Camera.h"
 #include "input/Input.h"
 #include "Random.h"
+
+#define CUDA_CHECK(call) \
+	do { \
+		cudaError_t err = call; \
+		if (err != cudaSuccess) { \
+			std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - " << cudaGetErrorString(err) << std::endl; \
+			exit(EXIT_FAILURE); \
+		} \
+	} while (0)
 
 typedef Input::Input input;
 
@@ -185,7 +195,7 @@ void Camera::UpdateRayDirection()
 		thread.join();
 }
 
-void Camera::allocateDevice(DeviceCamera& deviceCamera)
+void Camera::allocateDevice(DeviceCamera& deviceCamera) const
 {
 	deviceCamera.position = m_position;
 	deviceCamera.direction = m_direction;
@@ -193,15 +203,17 @@ void Camera::allocateDevice(DeviceCamera& deviceCamera)
 	deviceCamera.height = m_height;
 
 	size_t rayDirSize = m_width * m_height * sizeof(glm::vec3);
-	cudaMalloc(&deviceCamera.rayDirection, rayDirSize);
-	cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), rayDirSize, cudaMemcpyHostToDevice);
+	CUDA_CHECK(cudaMalloc(&deviceCamera.rayDirection, rayDirSize));
+	CUDA_CHECK(cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), rayDirSize, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 void Camera::freeDevice(DeviceCamera& deviceCamera)
 {
 	if (deviceCamera.rayDirection)
 	{
-		cudaFree(deviceCamera.rayDirection);
+		CUDA_CHECK(cudaDeviceSynchronize());
+		CUDA_CHECK(cudaFree(deviceCamera.rayDirection));
 		deviceCamera.rayDirection = nullptr;
 	}
 }

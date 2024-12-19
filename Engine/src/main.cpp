@@ -10,17 +10,25 @@ public:
     Ataraxia()
         : m_camera(45.0f, 0.1f, 100.0f)
     {
+        ImGui::CreateContext();
+
         Material& mat1 = m_scene.materials.emplace_back();
-        mat1.albedo = { 0.5f, 0.0f, 1.0f };
+        mat1.albedo = { 1.022f, 0.782f, 0.344f };
         mat1.roughness = 1.0f;
 
         Material& mat2 = m_scene.materials.emplace_back();
         mat2.albedo = { 1.0f, 0.0f, 0.0f };
         mat2.roughness = 0.3f;
 
+        //Material& mat3 = m_scene.materials.emplace_back();
+        //mat3.albedo = { 0.8f, 0.5f, 0.2f };
+        //mat3.roughness = 0.1f;
+        //mat3.emissionColor = mat3.albedo;
+        //mat3.emissionIntensity = 20.0f;
+
         Material& mat4 = m_scene.materials.emplace_back();
-		mat4.albedo = { 0.8f, 0.8f, 0.8f };
-		mat4.roughness = 0.58f;
+		mat4.albedo = { 0.972f, 0.960f, 0.915f };
+		mat4.roughness = 0.25f;
 		mat4.metallic = 1.0f;
 		mat4.F0 = { 0.96f, 0.96f, 0.97f };
 
@@ -48,6 +56,14 @@ public:
             m_scene.spheres.push_back(s);
         }
 
+        //{
+        //    Sphere s;
+        //    s.center = { 32.4f, 3.8f, -32.1f };
+        //    s.radius = 20.3f;
+        //    s.id = 2;
+        //    m_scene.spheres.push_back(s);
+        //}
+
         {
             Sphere s;
             s.center = { -2.0f, 0.0f, 2.0f };
@@ -65,33 +81,37 @@ public:
     
     virtual void onGuiRender() override
     {
-        ImGui::CreateContext();
         const auto& io = ImGui::GetIO();
 
         Style::theme();
 
         ImGui::Begin("Settings");
 
-        ImGui::Checkbox("Accumulation", &m_renderer.getSettings().accumulation);
+        ImGui::Checkbox("Accumulation", const_cast<bool*>(&m_renderer.getSettings().accumulation));
         if (ImGui::Button("Reset Frame Index"))
             m_renderer.resetFrameIndex();
 
-        ImGui::SetCursorPosY(ImGui::GetWindowHeight() - 26);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
+        ImGui::Checkbox("Sky Light", const_cast<bool*>(&m_renderer.getSettings().skyLight));
+        ImGui::DragInt("Max Bounces", const_cast<int*>(&m_renderer.getSettings().maxBounces), 1, 1, 500);
+
+        ImGui::Separator();
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
         ImGui::End();
 
 		ImGui::Begin("Scene settings");
 		for (size_t i = 0; i < m_scene.spheres.size(); i++)
         {
-            ImGui::PushID(i);
-			ImGui::Text("Sphere %d", i);
+            ImGui::PushID(static_cast<int32_t>(i));
+			ImGui::Text("Sphere %d", static_cast<int32_t>(i) + 1);
 
             if (ImGui::DragFloat3("Position", &m_scene.spheres[i].center[0], 0.01f))
 				m_renderer.resetFrameIndex();
 			if (ImGui::DragFloat("Radius", &m_scene.spheres[i].radius, 0.01f))
 				m_renderer.resetFrameIndex();
 
-            ImGui::DragInt("Material index", &m_scene.spheres[i].id, 0.5f, 0, static_cast<int>(m_scene.materials.size() - 1));
+            if (!m_scene.materials.empty())
+                ImGui::DragInt("Material index", &m_scene.spheres[i].id, 0.5f, 0, static_cast<int>(m_scene.materials.size() - 1));
 
             ImGui::Separator();
 			ImGui::PopID();
@@ -101,13 +121,16 @@ public:
         ImGui::Begin("Material settings");
 		for (size_t i = 0; i < m_scene.materials.size(); i++)
         {
-	        ImGui::PushID(i);
-			ImGui::Text("Material %d", i);
+	        ImGui::PushID(static_cast<int32_t>(i));
+			ImGui::Text("Material %d", static_cast<int32_t>(i) + 1);
 
 			ImGui::ColorEdit3("Albedo", reinterpret_cast<float*>(&m_scene.materials[i].albedo));
 			ImGui::DragFloat("Roughness", &m_scene.materials[i].roughness, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Metallic", &m_scene.materials[i].metallic, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat3("F0", &m_scene.materials[i].F0[0], 0.01f, 0.0f, 1.0f);
+
+			ImGui::ColorEdit3("Emission Color", reinterpret_cast<float*>(&m_scene.materials[i].emissionColor));
+			ImGui::DragFloat("Emission Intensity", &m_scene.materials[i].emissionIntensity, 0.01f, 0.0f, FLT_MAX);
 
 			ImGui::Separator();
 			ImGui::PopID();
@@ -117,11 +140,11 @@ public:
 		ImGui::Begin("Light settings");
         for (size_t i = 0; i < m_scene.lights.size(); i++)
         {
-			ImGui::PushID(i);
-			ImGui::Text("Light %d", i);
+			ImGui::PushID(static_cast<int32_t>(i));
+			ImGui::Text("Light %d", static_cast<int32_t>(i) + 1);
 
 			ImGui::DragFloat3("Position", &m_scene.lights[i].position[0], 0.01f);
-			ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_scene.lights[i].color));
+			//ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_scene.lights[i].color));
 			ImGui::DragFloat("Intensity", &m_scene.lights[i].intensity, 0.01f, 0.0f, FLT_MAX);
 
 			ImGui::Separator();

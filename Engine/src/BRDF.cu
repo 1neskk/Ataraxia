@@ -35,7 +35,8 @@ __device__ glm::vec3 BRDF::cookTorrance(const glm::vec3& albedo, const glm::vec3
 
 __device__ glm::vec3 BRDF::fresnelSchlick(const glm::vec3& F0, float cosTheta)
 {
-	return F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
+	cosTheta = glm::clamp(cosTheta, 0.0f, 1.0f);
+	return F0 + (1.0f - F0) * powf(1.0f - cosTheta, 5.0f);
 }
 
 __device__ float BRDF::distributionGGX(float NdotH, float roughness)
@@ -76,8 +77,8 @@ __device__ glm::vec3 BRDF::sampleHemisphereCosineWeighted(const glm::vec3& N, ui
 	const float r = sqrt(u1);
 	const float theta = 2.0f * glm::pi<float>() * u2;
 
-	const float x = r * cos(theta);
-	const float y = r * sin(theta);
+	const float x = r * cosf(theta);
+	const float y = r * sinf(theta);
 	const float z = sqrt(1 - u1);
 
 	glm::vec3 T, B; // Tangent and Bitangent
@@ -102,7 +103,7 @@ __device__ glm::vec3 BRDF::sampleGGX(const glm::vec3& N, float roughness, uint32
 	const float sinTheta = sqrt(1 - cosTheta * cosTheta);
 	const float phi = 2.0f * glm::pi<float>() * u2;
 
-	const auto H = glm::vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+	const auto H = glm::vec3(sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta);
 
 	glm::vec3 T, B; // Tangent and Bitangent
 	if (fabs(N.x) > fabs(N.y))
