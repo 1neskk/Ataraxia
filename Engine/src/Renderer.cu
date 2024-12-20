@@ -323,8 +323,8 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 	ray.origin = d_camera.position;
 	ray.direction = d_camera.rayDirection[x + y * width];
 
+	glm::vec3 color(0.0f);
 	// The throughput vector accounts for the attenuation of light as it bounces around the scene.
-    glm::vec3 color(0.0f);
     glm::vec3 throughput(1.0f);
 
 	uint32_t seed = x + y * width;
@@ -357,11 +357,15 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 		}
 
 		glm::vec3 baseReflectivity = glm::mix(mat->F0, mat->albedo, mat->metallic);
-		for (size_t j = 0; j < numLights; j++)
+
+		// Light Sampling Logic (only supports point lights for now)
+		if (numLights > 0)
 		{
-			const Light& light = sharedLights[j];
-			glm::vec3 L = light.position - ht.worldPos;
-			const float distance = glm::length(L);
+			int lightIndex = Random::Random::PcgHash(seed) % numLights;
+			const Light& sampledLight = lights[lightIndex];
+
+			glm::vec3 L = sampledLight.position - ht.worldPos;
+			float distanceSquared = glm::dot(L, L);
 			L = glm::normalize(L);
 
 			Ray shadowRay;
@@ -369,23 +373,37 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 			shadowRay.direction = L;
 
 			HitRecord shadowHt = traceRay(shadowRay, spheres, numSpheres);
-			if (shadowHt.t > 0.0f && shadowHt.t < distance)
-				continue;
+			if (shadowHt.t > 0.0f && shadowHt.t * shadowHt.t < distanceSquared)
+			{
+				// Light is occluded; skip contribution.
+			}
+			else
+			{
+				// Evaluate BRDF where V is the view direction, N is the surface normal, and L is the light direction.
+				glm::vec3 V = -ray.direction;
+				glm::vec3 N = ht.worldNormal;
+				glm::vec3 specular = BRDF::cookTorrance(mat->albedo, baseReflectivity, mat->metallic, mat->roughness, N, V, L);
+				glm::vec3 emission = sampledLight.color * sampledLight.intensity;
 
-			const glm::vec3 V = -ray.direction;
-			const glm::vec3 N = ht.worldNormal;
+				float NdotL = glm::max(glm::dot(N, L), 0.0f);
 
-			const glm::vec3 specular = BRDF::cookTorrance(mat->albedo, baseReflectivity, mat->metallic, mat->roughness, N, V, L);
-			const float NdotL = glm::max(glm::dot(N, L), 0.0f);
+				// Calculate PDF (Probability Density Function), for point lights, it's 1.
+				float pdf = 1.0f;
 
-			color += light.intensity * specular * NdotL * throughput;
+				color += emission * specular * NdotL * throughput / pdf;
+			}
 		}
 
 		throughput *= mat->albedo;
 		ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
 
-		if (glm::length(throughput) < 0.01f)
+		// Russian Roulette Logic
+		// Randomly terminate the ray with a probability based on the throughput length in order to prevent infinite loops.
+		float p = glm::max(0.1f, glm::min(1.0f, glm::length(throughput)));
+		if (Random::Random::PcgFloat(seed) > p)
 			break;
+
+		throughput /= p;
 
 		if (mat->metallic > 0.0f)
 			ray.direction = BRDF::sampleGGX(ht.worldNormal, mat->roughness, seed);
