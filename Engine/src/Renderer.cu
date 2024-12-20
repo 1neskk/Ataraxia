@@ -10,6 +10,7 @@
 
 #include <glm/ext/scalar_constants.hpp>
 
+#ifdef _DEBUG
 #define CUDA_CHECK(call) \
 	do \
 	{ \
@@ -20,10 +21,11 @@
 			std::exit(EXIT_FAILURE); \
 		} \
 	} while (0)
+#endif
 
-__global__ void kernelRender(uint32_t width, uint32_t height, uint32_t * imageData, const Sphere * spheres,
-	size_t numSpheres, const DeviceCamera d_camera, const Material * materials, size_t numMaterials, glm::vec4 * accumulation,
-	uint32_t frameIndex, const Light * lights, size_t numLights, Settings settings);
+__global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
+	size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
+	uint32_t frameIndex, const Light* lights, size_t numLights, Settings settings);
 
 Renderer::Renderer() : d_spheres_(nullptr), d_materials_(nullptr),d_lights_(nullptr), d_accumulation_(nullptr), h_imageData_(nullptr),
                        d_imageData_(nullptr), m_frameIndex(1)
@@ -242,7 +244,7 @@ void Renderer::Render(Camera& camera, const Scene& scene)
 	}
 
     m_image->setData(h_imageData_);
-	camera.freeDevice(d_camera);
+	Camera::freeDevice(d_camera);
 
     if (m_settings.accumulation)
         m_frameIndex++;
@@ -321,6 +323,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 	ray.origin = d_camera.position;
 	ray.direction = d_camera.rayDirection[x + y * width];
 
+	// The throughput vector accounts for the attenuation of light as it bounces around the scene.
     glm::vec3 color(0.0f);
     glm::vec3 throughput(1.0f);
 
@@ -345,6 +348,13 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 
 		const auto& [center, radius, id] = spheres[ht.id];
 		const Material* mat = &materials[id];
+
+		// Emission Logic
+		if (mat->emissionIntensity > 0.0f)
+		{
+			const glm::vec3 emission = mat->getEmission();
+			color += emission * throughput;
+		}
 
 		glm::vec3 baseReflectivity = glm::mix(mat->F0, mat->albedo, mat->metallic);
 		for (size_t j = 0; j < numLights; j++)

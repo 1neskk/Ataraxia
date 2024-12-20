@@ -20,12 +20,6 @@ public:
         mat2.albedo = { 1.0f, 0.0f, 0.0f };
         mat2.roughness = 0.3f;
 
-        //Material& mat3 = m_scene.materials.emplace_back();
-        //mat3.albedo = { 0.8f, 0.5f, 0.2f };
-        //mat3.roughness = 0.1f;
-        //mat3.emissionColor = mat3.albedo;
-        //mat3.emissionIntensity = 20.0f;
-
         Material& mat4 = m_scene.materials.emplace_back();
 		mat4.albedo = { 0.972f, 0.960f, 0.915f };
 		mat4.roughness = 0.25f;
@@ -55,14 +49,6 @@ public:
             s.id = 1;
             m_scene.spheres.push_back(s);
         }
-
-        //{
-        //    Sphere s;
-        //    s.center = { 32.4f, 3.8f, -32.1f };
-        //    s.radius = 20.3f;
-        //    s.id = 2;
-        //    m_scene.spheres.push_back(s);
-        //}
 
         {
             Sphere s;
