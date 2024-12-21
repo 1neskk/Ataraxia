@@ -14,7 +14,6 @@ class Renderer
 		float t;
 		glm::vec3 worldPos;
 		glm::vec3 worldNormal;
-		Sphere sphere;
 		uint32_t id;
 	};
 
@@ -27,7 +26,9 @@ public:
 
     [[nodiscard]] std::shared_ptr<Image> getImage() const { return m_image; }
 
-	Settings& getSettings() { return m_settings; }
+	const Settings& getSettings() const { return m_settings; }
+	void setSettings(const Settings& settings) { m_settings = settings; }
+
     void resetFrameIndex() { m_frameIndex = 1; }
 
 	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);
@@ -35,12 +36,13 @@ public:
     static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
         size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
-        const Light* lights, size_t numLights);
+        const Light* lights, size_t numLights, Settings settings);
 private:
 	void allocateDeviceMemory(const Scene& scene);
 	void freeDeviceMemory();
 
 private:
+	// TODO: Wrap device pointers in a smart pointer
     const Scene* m_scene = nullptr;
 	Sphere* d_spheres_ = nullptr; // device spheres
 	Material* d_materials_ = nullptr; // device materials
@@ -57,10 +59,6 @@ private:
 
     uint32_t m_width = 0, m_height = 0;
 };
-
-__global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
-    size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
-    uint32_t frameIndex, const Light* lights, size_t numLights);
 
 namespace colorUtils
 {

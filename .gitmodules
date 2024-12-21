@@ -14,3 +14,7 @@
 	path = thirdparty/imgui
 	url = https://github.com/ocornut/imgui
 	branch = docking
+
+[submodule "thirdparty/json"]
+	path = thirdparty/json
+	url = https://github.com/nlohmann/json

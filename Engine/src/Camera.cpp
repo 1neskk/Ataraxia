@@ -1,4 +1,5 @@
 #include <thread>
+#include <cuda_runtime.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -8,6 +9,15 @@
 #include "input/Input.h"
 #include "Random.h"
 
+#define CUDA_CHECK(call) \
+	do { \
+		cudaError_t err = call; \
+		if (err != cudaSuccess) { \
+			std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - " << cudaGetErrorString(err) << std::endl; \
+			exit(EXIT_FAILURE); \
+		} \
+	} while (0)
+
 typedef Input::Input input;
 
 Camera::Camera(float fov, float nearClip, float farClip)
@@ -15,6 +25,14 @@ Camera::Camera(float fov, float nearClip, float farClip)
 {
 	m_direction = glm::vec3(0.0f, 0.0f, -1.0f);
 	m_position = glm::vec3(0.0f, 0.0f, 3.0f);
+	UpdateViewMatrix();
+	UpdateProjectionMatrix();
+}
+
+Camera::Camera(float fov, float nearClip, float farClip, glm::vec3 position, glm::vec3 direction)
+	: m_fov(fov), m_nearClip(nearClip), m_farClip(farClip), m_position(position), m_direction(direction),
+	m_width(1600), m_height(900)
+{
 	UpdateViewMatrix();
 	UpdateProjectionMatrix();
 }
@@ -185,7 +203,7 @@ void Camera::UpdateRayDirection()
 		thread.join();
 }
 
-void Camera::allocateDevice(DeviceCamera& deviceCamera)
+void Camera::allocateDevice(DeviceCamera& deviceCamera) const
 {
 	deviceCamera.position = m_position;
 	deviceCamera.direction = m_direction;
@@ -193,15 +211,17 @@ void Camera::allocateDevice(DeviceCamera& deviceCamera)
 	deviceCamera.height = m_height;
 
 	size_t rayDirSize = m_width * m_height * sizeof(glm::vec3);
-	cudaMalloc(&deviceCamera.rayDirection, rayDirSize);
-	cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), rayDirSize, cudaMemcpyHostToDevice);
+	CUDA_CHECK(cudaMalloc(&deviceCamera.rayDirection, rayDirSize));
+	CUDA_CHECK(cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), rayDirSize, cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaDeviceSynchronize());
 }
 
 void Camera::freeDevice(DeviceCamera& deviceCamera)
 {
 	if (deviceCamera.rayDirection)
 	{
-		cudaFree(deviceCamera.rayDirection);
+		CUDA_CHECK(cudaDeviceSynchronize());
+		CUDA_CHECK(cudaFree(deviceCamera.rayDirection));
 		deviceCamera.rayDirection = nullptr;
 	}
 }
