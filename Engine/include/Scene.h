@@ -4,6 +4,7 @@
 #define GLM_FORCE_CUDA
 #include <glm/glm.hpp>
 #include <vector>
+#include "Camera.h"
 
 struct Ray
 {
@@ -16,6 +17,11 @@ struct Sphere
 	glm::vec3 center;
 	float radius;
 	int id = 0;
+
+	Sphere() = default;
+	Sphere(const glm::vec3& c, float r, int materialId)
+		: center(c), radius(r), id(materialId) {
+	}
 };
 
 struct Light
@@ -23,6 +29,11 @@ struct Light
 	glm::vec3 position;
 	glm::vec3 color;
 	float intensity;
+
+	Light() = default;
+	Light(const glm::vec3& pos, const glm::vec3& col, float i)
+		: position(pos), color(col), intensity(i) {
+	}
 };
 
 struct Material
@@ -39,6 +50,8 @@ struct Material
 	int id = 0;
 
 	__host__ __device__ glm::vec3 getEmission() const { return emissionColor * emissionIntensity; }
+
+	Material() = default;
 };
 
 struct Settings
@@ -46,6 +59,8 @@ struct Settings
 	bool accumulation = true;
 	bool skyLight = false;
 	int maxBounces = 15;
+
+	Settings() = default;
 };
 
 struct Scene
@@ -53,4 +68,12 @@ struct Scene
 	std::vector<Sphere> spheres;
 	std::vector<Material> materials;
 	std::vector<Light> lights;
+	Settings settings;
+	Camera camera;
+
+	Scene() = default;
+	Scene(const Scene& other) = default;
+	Scene& operator=(const Scene& other) = default;
+	Scene(Scene&& other) = default;
+	Scene& operator=(Scene&& other) = default;
 };

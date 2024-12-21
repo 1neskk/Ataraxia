@@ -27,6 +27,8 @@ public:
     [[nodiscard]] std::shared_ptr<Image> getImage() const { return m_image; }
 
 	const Settings& getSettings() const { return m_settings; }
+	void setSettings(const Settings& settings) { m_settings = settings; }
+
     void resetFrameIndex() { m_frameIndex = 1; }
 
 	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);

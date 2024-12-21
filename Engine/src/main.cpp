@@ -2,6 +2,7 @@
 #include "main.h"
 #include "Image.h"
 #include "Renderer.h"
+#include "Utils.h"
 #include "Timer.h"
 
 class Ataraxia final : public Layer
@@ -10,6 +11,9 @@ public:
     Ataraxia()
         : m_camera(45.0f, 0.1f, 100.0f)
     {
+        m_scene.camera = m_camera;
+        m_scene.settings = m_renderer.getSettings();
+
         ImGui::CreateContext();
 
         Material& mat1 = m_scene.materials.emplace_back();
@@ -62,7 +66,10 @@ public:
     virtual void onUpdate(const float ts) override
     {
         if (m_camera.onUpdate(ts))
+        {
             m_renderer.resetFrameIndex();
+            m_scene.camera = m_camera;
+        }
     }
     
     virtual void onGuiRender() override
@@ -83,6 +90,21 @@ public:
 
         ImGui::Separator();
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
+
+        if (ImGui::Button("Export Scene"))
+        {
+            m_scene.camera = m_camera;
+            m_scene.settings = m_renderer.getSettings();
+            Utils::exportScene(m_scene, "scene.json");
+        }
+        if (ImGui::Button("Import Scene"))
+        {
+            m_scene = Utils::importScene("scene.json");
+            m_camera = m_scene.camera;
+            m_renderer.setSettings(m_scene.settings);
+			m_renderer.resetFrameIndex();
+        }
+
         ImGui::End();
 
 		ImGui::Begin("Scene settings");
@@ -167,7 +189,7 @@ public:
 private:
     Scene m_scene;
     Renderer m_renderer;
-	Camera m_camera;
+    Camera m_camera;
 
     uint32_t m_viewportWidth = 0, m_viewportHeight = 0;
     float m_lastRenderTime = 0.0f;

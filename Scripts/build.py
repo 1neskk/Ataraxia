@@ -1,6 +1,7 @@
 import os
 import subprocess
 import platform
+import shutil
 
 def run_command(command):
     process = subprocess.Popen(command, shell=True)
@@ -11,7 +12,8 @@ def main():
     platform_name = platform.system()
 
     if os.path.exists(cwd + "/../build"):
-        os.rmdir(cwd + "/../build")
+        shutil.rmtree(cwd + "/../build", ignore_errors=True)
+        os.mkdir(cwd + "/../build")
     else:
         os.mkdir(cwd + "/../build")
 

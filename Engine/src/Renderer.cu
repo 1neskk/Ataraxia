@@ -311,14 +311,6 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
     size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
 	const Light* lights, size_t numLights, Settings settings)
 {
-	__shared__ Light sharedLights[10];
-
-	const uint32_t tid = threadIdx.x + threadIdx.y * blockDim.x;
-	if (tid < numLights && tid < 10)
-		sharedLights[tid] = lights[tid];
-
-	__syncthreads();
-
 	Ray ray;
 	ray.origin = d_camera.position;
 	ray.direction = d_camera.rayDirection[x + y * width];

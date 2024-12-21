@@ -6,6 +6,7 @@
 class Camera
 {
 public:
+	Camera() = default;
 	Camera(float fov, float nearClip, float farClip);
 
 	bool onUpdate(float dt);
@@ -21,6 +22,11 @@ public:
 
 	const glm::vec3& getPosition() const { return m_position; }
 	const glm::vec3& getDirection() const { return m_direction; }
+	const float& getFov() const { return m_fov; }
+
+	void setPosition(const glm::vec3& position) { m_position = position; m_viewDirty = true; }
+	void setDirection(const glm::vec3& direction) { m_direction = direction; m_viewDirty = true; }
+	void setFov(float fov) { m_fov = fov; m_projectionDirty = true; }
 
 	const std::vector<glm::vec3>& getRayDirection() const { return m_rayDirection; }
 	static float getRotationSpeed();
