@@ -130,7 +130,7 @@ public:
 			ImGui::Text("Light %d", static_cast<int32_t>(i) + 1);
 
 			ImGui::DragFloat3("Position", &m_scene.lights[i].position[0], 0.01f);
-			//ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_scene.lights[i].color));
+			ImGui::ColorEdit3("Color", reinterpret_cast<float*>(&m_scene.lights[i].color));
 			ImGui::DragFloat("Intensity", &m_scene.lights[i].intensity, 0.01f, 0.0f, FLT_MAX);
 
 			ImGui::Separator();

@@ -11,6 +11,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glm)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/imgui)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glfw/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/stb)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/json/include)
 
 include_directories(${CUDA_INCLUDE_DIRS})
 include_directories(${Vulkan_INCLUDE_DIRS})

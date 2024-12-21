@@ -385,19 +385,16 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 				glm::vec3 specular = BRDF::cookTorrance(mat->albedo, baseReflectivity, mat->metallic, mat->roughness, N, V, L);
 				glm::vec3 emission = sampledLight.color * sampledLight.intensity;
 
-				float NdotL = glm::max(glm::dot(N, L), 0.0f);
-
 				// Calculate PDF (Probability Density Function), for point lights, it's 1.
 				float pdf = 1.0f;
 
-				color += emission * specular * NdotL * throughput / pdf;
+				color += emission * specular * throughput / pdf;
 			}
 		}
 
 		throughput *= mat->albedo;
 		ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
 
-		// Russian Roulette Logic
 		// Randomly terminate the ray with a probability based on the throughput length in order to prevent infinite loops.
 		float p = glm::max(0.1f, glm::min(1.0f, glm::length(throughput)));
 		if (Random::Random::PcgFloat(seed) > p)
