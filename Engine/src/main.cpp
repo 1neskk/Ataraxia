@@ -88,6 +88,19 @@ public:
         ImGui::Checkbox("Sky Light", const_cast<bool*>(&m_renderer.getSettings().skyLight));
         ImGui::DragInt("Max Bounces", const_cast<int*>(&m_renderer.getSettings().maxBounces), 1, 1, 500);
 
+        if (ImGui::DragFloat("FOV", const_cast<float*>(&m_camera.getFov()), 1.0f, 179.0f))
+        {
+            m_camera = Camera(m_camera.getFov(), 0.1f, 100.0f, m_camera.getPosition(), m_camera.getDirection());
+            m_scene.camera = m_camera;
+            m_renderer.resetFrameIndex();
+        }
+        if (ImGui::Button("Reset Camera"))
+        {
+            m_camera = Camera(45.0f, 0.1f, 100.0f);
+            m_scene.camera = m_camera;
+            m_renderer.resetFrameIndex();
+        }
+
         ImGui::Separator();
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
 

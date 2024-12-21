@@ -29,6 +29,14 @@ Camera::Camera(float fov, float nearClip, float farClip)
 	UpdateProjectionMatrix();
 }
 
+Camera::Camera(float fov, float nearClip, float farClip, glm::vec3 position, glm::vec3 direction)
+	: m_fov(fov), m_nearClip(nearClip), m_farClip(farClip), m_position(position), m_direction(direction),
+	m_width(1600), m_height(900)
+{
+	UpdateViewMatrix();
+	UpdateProjectionMatrix();
+}
+
 bool Camera::onUpdate(float dt)
 {
 	glm::vec2 mousePos = input::GetMousePosition();

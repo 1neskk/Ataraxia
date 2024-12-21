@@ -8,6 +8,7 @@ class Camera
 public:
 	Camera() = default;
 	Camera(float fov, float nearClip, float farClip);
+	Camera(float fov, float nearClip, float farClip, glm::vec3 position, glm::vec3 direction);
 
 	bool onUpdate(float dt);
 	void Resize(uint32_t width, uint32_t height);
