@@ -4,24 +4,14 @@
 #define GLM_FORCE_CUDA
 #include <glm/glm.hpp>
 #include <vector>
+#include <memory>
 #include "Camera.h"
+#include "SceneNode.h"
 
 struct Ray
 {
 	glm::vec3 origin;
     glm::vec3 direction;
-};
-
-struct Sphere
-{
-	glm::vec3 center;
-	float radius;
-	int id = 0;
-
-	Sphere() = default;
-	Sphere(const glm::vec3& c, float r, int materialId)
-		: center(c), radius(r), id(materialId) {
-	}
 };
 
 struct Light
@@ -52,6 +42,9 @@ struct Material
 	__host__ __device__ glm::vec3 getEmission() const { return emissionColor * emissionIntensity; }
 
 	Material() = default;
+	Material(const glm::vec3& albedo, float roughness, float metallic, const glm::vec3& emissionColor, float emissionIntensity, int id)
+		: albedo(albedo), roughness(roughness), metallic(metallic), emissionColor(emissionColor), emissionIntensity(emissionIntensity), id(id) {
+	}
 };
 
 struct Settings
@@ -65,13 +58,14 @@ struct Settings
 
 struct Scene
 {
-	std::vector<Sphere> spheres;
+	std::shared_ptr<SceneNode> rootNode;
 	std::vector<Material> materials;
 	std::vector<Light> lights;
 	Settings settings;
 	Camera camera;
 
-	Scene() = default;
+	Scene() : rootNode(std::make_shared<SceneNode>("Root")) {}
+
 	Scene(const Scene& other) = default;
 	Scene& operator=(const Scene& other) = default;
 	Scene(Scene&& other) = default;

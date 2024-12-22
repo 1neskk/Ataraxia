@@ -2,10 +2,10 @@
 
 #include <cstdint>
 #include <memory>
-
 #include "Scene.h"
 #include "Image.h"
 #include "Camera.h"
+#include "SceneNode.h"
 
 class Renderer
 {
@@ -37,9 +37,12 @@ public:
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
         size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
         const Light* lights, size_t numLights, Settings settings);
+
 private:
 	void allocateDeviceMemory(const Scene& scene);
 	void freeDeviceMemory();
+
+	static void traverseSceneGraph(const std::shared_ptr<SceneNode>& node, const glm::mat4& parentTransform, std::vector<Sphere>& spheres);
 
 private:
 	// TODO: Wrap device pointers in a smart pointer
