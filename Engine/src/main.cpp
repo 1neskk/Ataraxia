@@ -220,7 +220,7 @@ private:
         Sphere sphere1(glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 0);
         root->addSphere(sphere1);
 
-        std::shared_ptr<SceneNode> childNode2 = std::make_shared<SceneNode>("ChildNode1");
+        std::shared_ptr<SceneNode> childNode1 = std::make_shared<SceneNode>("ChildNode1");
         childNode1->setPosition(glm::vec3(2.0f, 0.0f, 0.0f));
         Sphere sphere2(glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 1);
         childNode1->addSphere(sphere2);
