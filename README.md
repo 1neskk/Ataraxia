@@ -56,6 +56,8 @@ This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan
 
 ![Screenshot 2024-12-17 025805](https://github.com/user-attachments/assets/7485fcab-acbe-4df4-838b-8e5dbca2510b)
 
+![Screenshot 2025-03-21 032435](https://github.com/user-attachments/assets/dd8867a2-3022-49b2-b7b7-9936e7190d5f)
+
 ![Screenshot 2024-12-16 012411](https://github.com/user-attachments/assets/faf609f1-248b-4d8e-86bd-60c1fb726a5c)
 
 ---
