@@ -2,6 +2,7 @@ import os
 import subprocess
 import platform
 from pathlib import Path
+import shutil
 
 import utils
 
@@ -12,7 +13,8 @@ VULKAN_SDK_INSTALLER_MAC_URL = f'https://sdk.lunarg.com/sdk/download/1.3.283.0/m
 VULKAN_SDK_LOCAL_PATH = 'PathTracingEngine/thirdparty/VulkanSDK'
 VULKAN_SDK_EXE_PATH = Path(VULKAN_SDK_LOCAL_PATH).joinpath('VulkanSDK.exe')
 
-CUDA_TOOLKIT_VERSION = "12.5.1"
+CUDA_TOOLKIT_VERSION = "v12.8"
+CUDA_TOOLKIT_INSTALLER_VERSION = "12.8.1"
 
 def run_command(command: str):
     subprocess.run(command, shell=True)
@@ -81,7 +83,7 @@ def check_cuda_toolkit() -> bool:
     if platform_name == 'windows':
         cuda_toolkit_path = Path('C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA') / CUDA_TOOLKIT_VERSION
         if not cuda_toolkit_path.exists():
-            print('CUDA Toolkit is not installed or the version is not 12.5.1.')
+            print('CUDA Toolkit is not installed or the version is not 12.8.')
             install_cuda_prompt()
             return False
         else:
@@ -98,17 +100,17 @@ def install_cuda_toolkit(installer_type: str):
     platform_name = platform.system().lower()
 
     if platform_name == 'windows':
-        cuda_toolkit_dir = Path('PathTracingEngine/thirdparty/CUDA')
-        cuda_toolkit_dir.mkdir(exist_ok=True)
+        cuda_toolkit_dir = Path('Ataraxia/thirdparty/CUDA')
+        cuda_toolkit_dir.mkdir(parents=True, exist_ok=True)
         print('Downloading CUDA Toolkit...')
         if installer_type == 'local':
-            utils.download_file(f'https://developer.download.nvidia.com/compute/cuda/{CUDA_TOOLKIT_VERSION}/local_installers/cuda_{CUDA_TOOLKIT_VERSION}_555.85_windows.exe', cuda_toolkit_dir / 'CUDA.exe')
+            utils.download_file(f'https://developer.download.nvidia.com/compute/cuda/{CUDA_TOOLKIT_INSTALLER_VERSION}.1/local_installers/cuda_{CUDA_TOOLKIT_INSTALLER_VERSION}.1_555.85_windows.exe', cuda_toolkit_dir / 'CUDA.exe')
             print('CUDA Toolkit downloaded.')
             print('Installing CUDA Toolkit...')
             os.startfile((cuda_toolkit_dir / 'CUDA.exe').absolute())
             print('Re-run this script after installation')
         elif installer_type == 'network':
-            utils.download_file(f'https://developer.download.nvidia.com/compute/cuda/{CUDA_TOOLKIT_VERSION}/network_installers/cuda_{CUDA_TOOLKIT_VERSION}_windows_network.exe', cuda_toolkit_dir / 'CUDA.exe')
+            utils.download_file(f'https://developer.download.nvidia.com/compute/cuda/{CUDA_TOOLKIT_INSTALLER_VERSION}.1/network_installers/cuda_{CUDA_TOOLKIT_INSTALLER_VERSION}.1_windows_network.exe', cuda_toolkit_dir / 'CUDA.exe')
             print('CUDA Toolkit downloaded.')
             print('Installing CUDA Toolkit...')
             os.startfile((cuda_toolkit_dir / 'CUDA.exe').absolute())
@@ -126,6 +128,14 @@ def main():
 
     if not check_cuda_toolkit():
         return
+
+    print("\n======================================\n")
+    print('All dependencies are installed.')
+    print('You can now build the project.\n')
+
+    if Path("Ataraxia/").exists():
+        shutil.rmtree(Path("Ataraxia/"), ignore_errors=True)
+    
 
 if __name__ == "__main__":
     main()

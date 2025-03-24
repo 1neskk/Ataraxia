@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 

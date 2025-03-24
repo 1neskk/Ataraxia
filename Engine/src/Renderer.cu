@@ -10,30 +10,13 @@
 
 #include <glm/ext/scalar_constants.hpp>
 
-#ifdef _DEBUG
-#define CUDA_CHECK(call) \
-    do \
-    { \
-        cudaError_t err = call; \
-        if (err != cudaSuccess) \
-        { \
-            std::cerr << "CUDA error: " << cudaGetErrorString(err) << " at " << __FILE__ << ":" << __LINE__ << "\n"; \
-            std::exit(EXIT_FAILURE); \
-        } \
-    } while (0)
-#endif
-
-__global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
-    size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
-    uint32_t frameIndex, const Light* lights, size_t numLights, Settings settings);
-
-Renderer::Renderer() : d_spheres_(nullptr), d_materials_(nullptr),d_lights_(nullptr), d_accumulation_(nullptr), h_imageData_(nullptr),
-    d_imageData_(nullptr), m_frameIndex(1)
+Renderer::Renderer() : d_spheres_(), d_materials_(),d_lights_(), d_accumulation_(), h_imageData_(),
+    d_imageData_(), m_frameIndex(1)
 {}
 
 Renderer::~Renderer()
 {
-    cudaFree(d_imageData_);
+    d_imageData_.Release();
     freeDeviceMemory();
 
     delete[] h_imageData_;
@@ -43,64 +26,42 @@ void Renderer::allocateDeviceMemory(const Scene& scene)
 {
     std::vector<Sphere> collectedSpheres;
     traverseSceneGraph(scene.rootNode, glm::mat4(1.0f), collectedSpheres);
-    size_t spheresSize = collectedSpheres.size() * sizeof(Sphere);
 
-#ifdef _DEBUG
-    CUDA_CHECK(cudaFree(d_spheres_));
-    CUDA_CHECK(cudaMalloc(&d_spheres_, spheresSize));
-    CUDA_CHECK(cudaMemcpy(d_spheres_, collectedSpheres.data(), spheresSize, cudaMemcpyHostToDevice));
+    for (auto& sphere : collectedSpheres)
+    {
+	    if (static_cast<uint32_t>(sphere.id) >= scene.materials.size())
+	    {
+			std::cerr << "Sphere ID out of bounds: " << sphere.id << "\n";
+			sphere.id = 0;
+	    }
+    }
+
+    m_numSpheres = collectedSpheres.size();
+
+    d_spheres_.Release();
+	d_spheres_ = CudaBuffer<Sphere>(m_numSpheres);
+    d_spheres_.CopyFromHost(collectedSpheres.data(), m_numSpheres);
+
+	m_numMaterials = scene.materials.size();
     
-    CUDA_CHECK(cudaFree(d_materials_));
-    CUDA_CHECK(cudaMalloc(&d_materials_, scene.materials.size() *sizeof(Material)));
-    CUDA_CHECK(cudaMemcpy(d_materials_, scene.materials.data(), scene.materials.size() * sizeof(Material), cudaMemcpyHostToDevice));
+    d_materials_.Release();
+	d_materials_ = CudaBuffer<Material>(m_numMaterials);
+	d_materials_.CopyFromHost(scene.materials.data(), m_numMaterials);
 
-    CUDA_CHECK(cudaFree(d_lights_));
-    CUDA_CHECK(cudaMalloc(&d_lights_, scene.lights.size() * sizeof(Light)));
-    CUDA_CHECK(cudaMemcpy(d_lights_, scene.lights.data(), scene.lights.size() * sizeof(Light), cudaMemcpyHostToDevice));
-#else
-    cudaFree(d_spheres_);
-    cudaMalloc(&d_spheres_, spheresSize);
-    cudaMemcpy(d_spheres_, collectedSpheres.data(), spheresSize, cudaMemcpyHostToDevice);
 
-    cudaFree(d_materials_);
-    cudaMalloc(&d_materials_, scene.materials.size() * sizeof(Material));
-    cudaMemcpy(d_materials_, scene.materials.data(), scene.materials.size() * sizeof(Material), cudaMemcpyHostToDevice);
+	m_numLights = scene.lights.size();
 
-    cudaFree(d_lights_);
-    cudaMalloc(&d_lights_, scene.lights.size() * sizeof(Light));
-    cudaMemcpy(d_lights_, scene.lights.data(), scene.lights.size() * sizeof(Light), cudaMemcpyHostToDevice);
-#endif
-
-    // TODO: Handle image data and accumulation buffer similarly.
+    d_lights_.Release();
+	d_lights_ = CudaBuffer<Light>(m_numLights);
+    d_lights_.CopyFromHost(scene.lights.data(), m_numLights);
 }
 
 void Renderer::freeDeviceMemory()
 {
-#ifdef _DEBUG
-    CUDA_CHECK(cudaFree(d_spheres_));
-    d_spheres_ = nullptr;
-
-    CUDA_CHECK(cudaFree(d_materials_));
-    d_materials_ = nullptr;
-
-    CUDA_CHECK(cudaFree(d_lights_));
-    d_lights_ = nullptr;
-
-    CUDA_CHECK(cudaFree(d_accumulation_));
-    d_accumulation_ = nullptr;
-#else
-    cudaFree(d_spheres_);
-    d_spheres_ = nullptr;
-
-    cudaFree(d_materials_);
-    d_materials_ = nullptr;
-
-    cudaFree(d_lights_);
-    d_lights_ = nullptr;
-
-    cudaFree(d_accumulation_);
-    d_accumulation_ = nullptr;
-#endif
+	d_spheres_.Release();
+	d_materials_.Release();
+	d_lights_.Release();
+	d_accumulation_.Release();
 }
 
 void Renderer::traverseSceneGraph(const std::shared_ptr<SceneNode>& node, const glm::mat4& parentTransform, std::vector<Sphere>& spheres)
@@ -163,10 +124,9 @@ void Renderer::onResize(uint32_t width, uint32_t height)
     delete[] h_imageData_;
     h_imageData_ = nullptr;
 
-#ifdef _DEBUG
     try
     {
-        h_imageData_ = new uint32_t[width * height];
+        h_imageData_ = new uint32_t[static_cast<uint64_t>(width) * height];
     }
     catch (const std::bad_alloc& e)
     {
@@ -174,49 +134,52 @@ void Renderer::onResize(uint32_t width, uint32_t height)
         return;
     }
 
-    CUDA_CHECK(cudaFree(d_imageData_));
-    cudaError_t err = cudaMalloc(&d_imageData_, static_cast<unsigned long long>(width) * height * sizeof(uint32_t));
-    if (err != cudaSuccess)
-    {
-        std::cerr << "Failed to allocate device image data: " << cudaGetErrorString(err) << "\n";
-        delete[] h_imageData_;
-        h_imageData_ = nullptr;
-        return;
-    }
+	d_imageData_.Release();
+	d_imageData_ = CudaBuffer<uint32_t>(static_cast<uint64_t>(width) * height);
 
-    CUDA_CHECK(cudaFree(d_accumulation_));
-    err = cudaMalloc(&d_accumulation_, static_cast<unsigned long long>(width) * height * sizeof(glm::vec4));
-    if (err != cudaSuccess)
-    {
-        std::cerr << "Failed to allocate accumulation buffer: " << cudaGetErrorString(err) << "\n";
-        cudaFree(d_imageData_);
-        delete[] h_imageData_;
-        h_imageData_ = nullptr;
-        return;
-    }
-#else
-    h_imageData_ = new uint32_t[width * height];
-
-    cudaFree(d_imageData_);
-    cudaMalloc(&d_imageData_, static_cast<unsigned long long>(width) * height * sizeof(uint32_t));
-
-    cudaFree(d_accumulation_);
-    cudaMalloc(&d_accumulation_, static_cast<unsigned long long>(width) * height * sizeof(glm::vec4));
-#endif
+    d_accumulation_.Release();
+	d_accumulation_ = CudaBuffer<glm::vec4>(static_cast<uint64_t>(width) * height);
 
     m_width = width;
     m_height = height;
     m_frameIndex = 1;
 }
 
+namespace
+{
+    __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
+        size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
+        uint32_t frameIndex, const Light* lights, size_t numLights, Settings settings)
+    {
+        if (width == 0 || height == 0 || d_camera.width == 0 || d_camera.height == 0)
+            return;
+
+        const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
+        const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
+
+        if (x < width && y < height)
+        {
+            const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, d_camera, materials, numMaterials, frameIndex,
+                lights, numLights, settings);
+            const uint32_t pixelIndex = x + y * width;
+            accumulation[pixelIndex] += color;
+            glm::vec4 finalColor = accumulation[pixelIndex] / static_cast<float>(frameIndex);
+            finalColor = glm::clamp(finalColor, 0.0f, 1.0f);
+            imageData[pixelIndex] = colorUtils::vec4ToRGBA(finalColor);
+        }
+    }
+}
+
 void Renderer::Render(Camera& camera, const Scene& scene)
 {
-    m_scene = &scene;
-
-    allocateDeviceMemory(scene); // TODO: Change device memory allocation to not be done every frame.
+    if (m_scene != &scene || m_frameIndex == 1)
+    {
+        m_scene = &scene;
+        allocateDeviceMemory(scene);
+    }
 
     if (m_frameIndex == 1)
-        cudaMemset(d_accumulation_, 0, static_cast<unsigned long long>(m_width) * m_height * sizeof(glm::vec4));
+        cudaMemset(d_accumulation_.GetData(), 0, static_cast<uint64_t>(m_width) * m_height * sizeof(glm::vec4));
 
     if (!m_image)
         return;
@@ -257,8 +220,8 @@ void Renderer::Render(Camera& camera, const Scene& scene)
     std::vector<Sphere> collectedSpheres;
     traverseSceneGraph(scene.rootNode, glm::mat4(1.0f), collectedSpheres);
 
-    kernelRender<<<gridSize, blockSize>>>(m_width, m_height, d_imageData_, d_spheres_, collectedSpheres.size(), d_camera,
-        d_materials_, scene.materials.size(), d_accumulation_, m_frameIndex, d_lights_, scene.lights.size(), m_settings);
+    kernelRender<<<gridSize, blockSize>>>(m_width, m_height, d_imageData_.GetData(), d_spheres_.GetData(), m_numSpheres, d_camera,
+        d_materials_.GetData(), m_numMaterials, d_accumulation_.GetData(), m_frameIndex, d_lights_.GetData(), m_numLights, m_settings);
 
     cudaError_t err = cudaGetLastError();
     if (err != cudaSuccess)
@@ -267,20 +230,14 @@ void Renderer::Render(Camera& camera, const Scene& scene)
         return;
     }
 
-    cudaDeviceSynchronize();
-    err = cudaGetLastError();
+	err = cudaDeviceSynchronize();
     if (err != cudaSuccess)
     {
-        std::cerr << "CUDA kernel synchronization error: " << cudaGetErrorString(err) << "\n";
-        return;
+		std::cerr << "CUDA kernel synchronization error: " << cudaGetErrorString(err) << "\n";
+		return;
     }
 
-    err = cudaMemcpy(h_imageData_, d_imageData_, m_width * m_height * sizeof(uint32_t), cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess)
-    {
-        std::cerr << "cudaMemcpy failed: " << cudaGetErrorString(err) << "\n";
-        return;
-    }
+	d_imageData_.CopyToHost(h_imageData_, static_cast<size_t>(m_width) * m_height);
 
     m_image->setData(h_imageData_);
     Camera::freeDevice(d_camera);
@@ -289,25 +246,6 @@ void Renderer::Render(Camera& camera, const Scene& scene)
         m_frameIndex++;
     else
         m_frameIndex = 1;
-}
-
-__global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
-    size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
-    uint32_t frameIndex, const Light* lights, size_t numLights, Settings settings)
-{
-    const uint32_t x = blockIdx.x * blockDim.x + threadIdx.x;
-    const uint32_t y = blockIdx.y * blockDim.y + threadIdx.y;
-
-    if (x < width && y < height)
-    {
-        const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, d_camera, materials, numMaterials, frameIndex, lights,
-            numLights, settings);
-        const uint32_t pixelIndex = x + y * width;
-        accumulation[pixelIndex] += color;
-        glm::vec4 finalColor = accumulation[pixelIndex] / static_cast<float>(frameIndex);
-        finalColor = glm::clamp(finalColor, 0.0f, 1.0f);
-        imageData[pixelIndex] = colorUtils::vec4ToRGBA(finalColor);
-    }
 }
 
 __device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres)
@@ -355,6 +293,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
     ray.direction = d_camera.rayDirection[x + y * width];
 
     glm::vec3 color(0.0f);
+
     // The throughput vector accounts for the attenuation of light as it bounces around the scene.
     glm::vec3 throughput(1.0f);
 
@@ -371,6 +310,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
         {
             if (settings.skyLight)
             {
+				// skyLight setting just adds a simple gradient to the background. It is not an actual light source.
                 glm::vec3 missColor(0.6f, 0.7f, 0.9f);
                 color += missColor * throughput;
             }
@@ -378,6 +318,11 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
         }
 
         const auto& [center, radius, id] = spheres[ht.id];
+
+        uint32_t materialIndex = id;
+		if (materialIndex >= numMaterials)
+			materialIndex = 0;
+
         const Material* mat = &materials[id];
 
         // Emission Logic
@@ -392,7 +337,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
         // Light Sampling Logic (only supports point lights for now)
         if (numLights > 0)
         {
-            int lightIndex = Random::Random::PcgHash(seed) % numLights;
+            uint32_t lightIndex = Random::Random::PcgHash(seed) % numLights;
             const Light& sampledLight = lights[lightIndex];
 
             glm::vec3 L = sampledLight.position - ht.worldPos;

@@ -433,7 +433,7 @@ void Application::init()
 
 	ImFontConfig fontConfig;
 	fontConfig.FontDataOwnedByAtlas = false;
-	ImFont* robotoFont = io.Fonts->AddFontFromMemoryTTF((void*)g_RobotoRegular, sizeof(g_RobotoRegular), 18.0f, &fontConfig);
+	ImFont* robotoFont = io.Fonts->AddFontFromMemoryTTF((void*)g_RobotoRegular, sizeof(g_RobotoRegular), 16.0f, &fontConfig);
 	io.FontDefault = robotoFont;
 
 	{

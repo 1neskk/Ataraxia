@@ -63,31 +63,22 @@ public:
         ImGui::Separator();
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
 
-        if (ImGui::Button("Export Scene"))
-        {
-            m_scene.camera = m_camera;
-            m_scene.settings = m_renderer.getSettings();
-            Utils::exportScene(m_scene, "scene.json");
-        }
-        if (ImGui::Button("Import Scene"))
-        {
-            m_scene = Utils::importScene("scene.json");
-            m_camera = m_scene.camera;
-            m_renderer.setSettings(m_scene.settings);
-            m_renderer.resetFrameIndex();
-        }
-
         ImGui::End();
 
         ImGui::Begin("Hierarchy");
-        ImGui::Text("Scene Graph");
-
         static std::function<void(const std::shared_ptr<SceneNode>&)> drawNode = [&](const std::shared_ptr<SceneNode>& node)
         {
             ImGui::PushID(node->getName().c_str());
-            if (ImGui::TreeNode(node->getName().c_str()))
+
+            ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_SpanFullWidth;
+            if (ImGui::TreeNodeEx(node->getName().c_str(), flags))
             {
-                if (ImGui::DragFloat3("Position##Node", const_cast<float*>(&node->getPosition()[0]), 0.01f))
+                ImGui::Indent();
+
+                ImGui::Text("Transform");
+                ImGui::Separator();
+
+                if (ImGui::DragFloat3("Position", const_cast<float*>(&node->getPosition()[0]), 0.01f))
                 {
                     node->setPosition(node->getPosition());
                     m_renderer.resetFrameIndex();
@@ -97,52 +88,53 @@ public:
                     node->setRotation(node->getRotation());
                     m_renderer.resetFrameIndex();
                 }
-                if (ImGui::DragFloat3("Scale", const_cast<float*>(&node->getScale()[0]), 0.01f))
+                if (ImGui::DragFloat3("Scale", const_cast<float*>(&node->getScale()[0]), 0.01f, 0.0f, FLT_MAX))
                 {
                     node->setScale(node->getScale());
                     m_renderer.resetFrameIndex();
                 }
 
+                ImGui::Spacing();
                 if (ImGui::Button("Remove Node"))
                 {
                     m_scene.rootNode->removeChild(node);
                     m_renderer.resetFrameIndex();
                 }
 
-                for (size_t i = 0; i < node->getSpheres().size(); i++)
+                ImGui::Spacing();
+
+                if (!node->getSpheres().empty())
                 {
-                    ImGui::PushID(static_cast<int32_t>(i));
-                    ImGui::Text("Sphere %d", static_cast<int32_t>(i) + 1);
-
-                    if (ImGui::DragFloat3("Position##Sphere", const_cast<float*>(&node->getSpheres()[i].center[0]), 0.01f))
-                        m_renderer.resetFrameIndex();
-                    if (ImGui::DragFloat("Radius", const_cast<float*>(&node->getSpheres()[i].radius), 0.01f))
-                        m_renderer.resetFrameIndex();
-
-/*                  const auto& materialsAmount = m_scene.materials.size();
-                    std::vector<const char*> materials(materialsAmount);
-                    for (size_t j = 0; j < materialsAmount; j++)
-                    {
-                        materials[j] = m_scene.materials[j].albedo == node->getSpheres()[j].id ? "Material " + std::to_string(j + 1).c_str() : nullptr;
-                    }
-*/
-                    if (ImGui::Combo("Material", const_cast<int*>(&node->getSpheres()[i].id), "Material 1\0Material 2\0Material 3\0\0"))
-                        m_renderer.resetFrameIndex();
-
+                    ImGui::Text("Spheres");
                     ImGui::Separator();
-                    ImGui::PopID();
+                    for (size_t i = 0; i < node->getSpheres().size(); i++)
+                    {
+                        ImGui::PushID(static_cast<int32_t>(i));
+                        std::string sphereLabel = "Sphere " + std::to_string(i + 1);
+                        if (ImGui::CollapsingHeader(sphereLabel.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                        {
+                            if (ImGui::DragFloat3("Center", const_cast<float*>(&node->getSpheres()[i].center[0]), 0.01f))
+                                m_renderer.resetFrameIndex();
+                            if (ImGui::DragFloat("Radius", const_cast<float*>(&node->getSpheres()[i].radius), 0.01f))
+                                m_renderer.resetFrameIndex();
+                            if (ImGui::Combo("Material", const_cast<int*>(&node->getSpheres()[i].id), "Material 1\0Material 2\0Material 3\0\0"))
+                                m_renderer.resetFrameIndex();
+                        }
+                        ImGui::PopID();
+                    }
                 }
+
                 for (const auto& child : node->getChildren())
                 {
                     drawNode(child);
                 }
+                ImGui::Unindent();
                 ImGui::TreePop();
             }
             ImGui::PopID();
         };
 
         drawNode(m_scene.rootNode);
-
         ImGui::End();
 
         ImGui::Begin("Material settings");
@@ -181,8 +173,8 @@ public:
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         ImGui::Begin("Viewport");
-        m_viewportWidth = ImGui::GetContentRegionAvail().x;
-        m_viewportHeight = ImGui::GetContentRegionAvail().y;
+        m_viewportWidth = static_cast<uint32_t>(ImGui::GetContentRegionAvail().x);
+        m_viewportHeight = static_cast<uint32_t>(ImGui::GetContentRegionAvail().y);
 
         if (const auto image = m_renderer.getImage())
             ImGui::Image(image->getDescriptorSet(), { static_cast<float>(image->getWidth()), static_cast<float>(image->getHeight()) },
@@ -194,6 +186,22 @@ public:
         Render();
     }
 
+	// Very lazy way to import and export scene data
+    void ImportScene()
+    {
+        m_scene = Utils::importScene("scene.json");
+        m_camera = m_scene.camera;
+        m_renderer.setSettings(m_scene.settings);
+        m_renderer.resetFrameIndex();
+    }
+
+	void ExportScene()
+	{
+		m_scene.camera = m_camera;
+		m_scene.settings = m_renderer.getSettings();
+		Utils::exportScene(m_scene, "scene.json");
+	}
+
     void Render()
     {
         Timer timer;
@@ -204,6 +212,11 @@ public:
 
         m_lastRenderTime = timer.ElapsedMS();
     }
+
+	Renderer GetRenderer() const { return m_renderer; }
+
+    Scene GetScene() const { return m_scene; }
+	void SetScene(const Scene& scene) { m_scene = scene; }
 
 private:
     Scene m_scene;
@@ -255,12 +268,36 @@ Application* createApplication(int argc, char** argv)
     app->pushLayer<Ataraxia>();
     app->setMenubarCallback([app]()
     {
+        if (ImGui::BeginMenu("Add"))
+        {
+            if (ImGui::MenuItem("Sphere"))
+            {
+				const auto layer = app->getLayer<Ataraxia>();
+				layer->GetScene().rootNode->addSphere(Sphere(glm::vec3(0.0f), 1.0f, 0));
+            }
+            ImGui::EndMenu();
+        }
+
         if (ImGui::BeginMenu("File"))
         {
-            if (ImGui::MenuItem("Exit"))
-                app->close();
             if (ImGui::MenuItem("Fullscreen", "F11"))
                 app->toggleFullscreen();
+
+            if (ImGui::MenuItem("Export Scene"))
+            {
+                const auto layer = app->getLayer<Ataraxia>();
+				layer->ExportScene();
+            }
+
+            if (ImGui::MenuItem("Import Scene"))
+            {
+				const auto layer = app->getLayer<Ataraxia>();
+				layer->ImportScene();
+            }
+
+            if (ImGui::MenuItem("Exit"))
+                app->close();
+
             ImGui::EndMenu();
         }
     });

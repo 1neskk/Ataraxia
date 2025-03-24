@@ -22,8 +22,7 @@ struct Light
 
 	Light() = default;
 	Light(const glm::vec3& pos, const glm::vec3& col, float i)
-		: position(pos), color(col), intensity(i) {
-	}
+		: position(pos), color(col), intensity(i) {}
 };
 
 struct Material
@@ -64,10 +63,18 @@ struct Scene
 	Settings settings;
 	Camera camera;
 
-	Scene() : rootNode(std::make_shared<SceneNode>("Root")) {}
+	Scene() : rootNode(std::make_shared<SceneNode>("Scene")) {}
 
-	Scene(const Scene& other) = default;
+	Scene(const Scene& other)
+	{
+		rootNode = other.rootNode;
+		materials = other.materials;
+		lights = other.lights;
+		settings = other.settings;
+		camera = other.camera;
+	}
+
+	Scene(Scene&& other) noexcept = default;
 	Scene& operator=(const Scene& other) = default;
-	Scene(Scene&& other) = default;
-	Scene& operator=(Scene&& other) = default;
+	Scene& operator=(Scene&& other) noexcept = default;
 };

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
 #include "Scene.h"
 #include "Image.h"
@@ -45,17 +44,20 @@ private:
 	static void traverseSceneGraph(const std::shared_ptr<SceneNode>& node, const glm::mat4& parentTransform, std::vector<Sphere>& spheres);
 
 private:
-	// TODO: Wrap device pointers in a smart pointer
     const Scene* m_scene = nullptr;
-	Sphere* d_spheres_ = nullptr; // device spheres
-	Material* d_materials_ = nullptr; // device materials
-	Light* d_lights_ = nullptr; // device lights
+	CudaBuffer<Sphere> d_spheres_; // device spheres
+	CudaBuffer<Material> d_materials_; // device materials
+	CudaBuffer<Light> d_lights_; // device lights
 
-    glm::vec4* d_accumulation_ = nullptr; // device accumulation buffer
+    size_t m_numSpheres = 0;
+    size_t m_numMaterials = 0;
+	size_t m_numLights = 0;
+
+    CudaBuffer<glm::vec4> d_accumulation_; // device accumulation buffer
 
 	std::shared_ptr<Image> m_image = nullptr;
     uint32_t* h_imageData_ = nullptr;  // host image data
-    uint32_t* d_imageData_ = nullptr; // device image data
+    CudaBuffer<uint32_t> d_imageData_; // device image data
 
 	Settings m_settings;
     uint32_t m_frameIndex = 1;
