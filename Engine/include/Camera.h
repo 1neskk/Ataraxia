@@ -1,7 +1,15 @@
 #pragma once
 
 #include <vector>
-#include "DeviceCamera.h"
+#include "DeviceMemory.h"
+
+struct DeviceCamera
+{
+	glm::vec3 position, direction;
+	uint32_t width, height;
+
+	glm::vec3* rayDirection;
+};
 
 class Camera
 {
@@ -9,6 +17,26 @@ public:
 	Camera() = default;
 	Camera(float fov, float nearClip, float farClip);
 	Camera(float fov, float nearClip, float farClip, glm::vec3 position, glm::vec3 direction);
+
+	Camera& operator=(const Camera& other)
+	{
+		m_projectionMatrix = other.m_projectionMatrix;
+		m_viewMatrix = other.m_viewMatrix;
+		m_inverseProjectionMatrix = other.m_inverseProjectionMatrix;
+		m_inverseViewMatrix = other.m_inverseViewMatrix;
+		m_position = other.m_position;
+		m_direction = other.m_direction;
+		m_rayDirection = other.m_rayDirection;
+		m_fov = other.m_fov;
+		m_nearClip = other.m_nearClip;
+		m_farClip = other.m_farClip;
+		m_lastMousePos = other.m_lastMousePos;
+		m_width = other.m_width;
+		m_height = other.m_height;
+		m_viewDirty = other.m_viewDirty;
+		m_projectionDirty = other.m_projectionDirty;
+		return *this;
+	}
 
 	bool onUpdate(float dt);
 	void Resize(uint32_t width, uint32_t height);
@@ -46,6 +74,7 @@ private:
 	glm::vec3 m_direction{ 0.0f };
 
 	std::vector<glm::vec3> m_rayDirection;
+	CudaBuffer<glm::vec3> m_deviceRayDirBuffer;
 
 	float m_fov = 45.0f;
 	float m_nearClip = 0.1f;

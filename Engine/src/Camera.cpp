@@ -9,15 +9,6 @@
 #include "input/Input.h"
 #include "Random.h"
 
-#define CUDA_CHECK(call) \
-	do { \
-		cudaError_t err = call; \
-		if (err != cudaSuccess) { \
-			std::cerr << "CUDA error at " << __FILE__ << ":" << __LINE__ << " - " << cudaGetErrorString(err) << std::endl; \
-			exit(EXIT_FAILURE); \
-		} \
-	} while (0)
-
 typedef Input::Input input;
 
 Camera::Camera(float fov, float nearClip, float farClip)
@@ -210,9 +201,11 @@ void Camera::allocateDevice(DeviceCamera& deviceCamera) const
 	deviceCamera.width = m_width;
 	deviceCamera.height = m_height;
 
-	size_t rayDirSize = m_width * m_height * sizeof(glm::vec3);
-	CUDA_CHECK(cudaMalloc(&deviceCamera.rayDirection, rayDirSize));
-	CUDA_CHECK(cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), rayDirSize, cudaMemcpyHostToDevice));
+	const size_t elementSize = static_cast<size_t>(m_width) * m_height;
+	const size_t byteSize = elementSize * sizeof(glm::vec3);
+
+	CUDA_CHECK(cudaMalloc(&deviceCamera.rayDirection, byteSize));
+	CUDA_CHECK(cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), byteSize, cudaMemcpyHostToDevice));
 	CUDA_CHECK(cudaDeviceSynchronize());
 }
 

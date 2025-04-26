@@ -12,6 +12,7 @@ def main():
     platform_name = platform.system()
 
     if os.path.exists(cwd + "/../build"):
+        print("Cleaning up previous build directory...")
         shutil.rmtree(cwd + "/../build", ignore_errors=True)
         os.mkdir(cwd + "/../build")
     else:

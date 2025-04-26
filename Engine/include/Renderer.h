@@ -1,11 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
-
 #include "Scene.h"
 #include "Image.h"
 #include "Camera.h"
+#include "SceneNode.h"
 
 class Renderer
 {
@@ -37,22 +36,28 @@ public:
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
         size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
         const Light* lights, size_t numLights, Settings settings);
+
 private:
 	void allocateDeviceMemory(const Scene& scene);
 	void freeDeviceMemory();
 
-private:
-	// TODO: Wrap device pointers in a smart pointer
-    const Scene* m_scene = nullptr;
-	Sphere* d_spheres_ = nullptr; // device spheres
-	Material* d_materials_ = nullptr; // device materials
-	Light* d_lights_ = nullptr; // device lights
+	static void traverseSceneGraph(const std::shared_ptr<SceneNode>& node, const glm::mat4& parentTransform, std::vector<Sphere>& spheres);
 
-    glm::vec4* d_accumulation_ = nullptr; // device accumulation buffer
+private:
+    const Scene* m_scene = nullptr;
+	CudaBuffer<Sphere> d_spheres_; // device spheres
+	CudaBuffer<Material> d_materials_; // device materials
+	CudaBuffer<Light> d_lights_; // device lights
+
+    size_t m_numSpheres = 0;
+    size_t m_numMaterials = 0;
+	size_t m_numLights = 0;
+
+    CudaBuffer<glm::vec4> d_accumulation_; // device accumulation buffer
 
 	std::shared_ptr<Image> m_image = nullptr;
     uint32_t* h_imageData_ = nullptr;  // host image data
-    uint32_t* d_imageData_ = nullptr; // device image data
+    CudaBuffer<uint32_t> d_imageData_; // device image data
 
 	Settings m_settings;
     uint32_t m_frameIndex = 1;

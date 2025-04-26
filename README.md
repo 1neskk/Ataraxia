@@ -54,6 +54,8 @@ This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan
 
 ## Showcase
 
+![Screenshot 2025-03-21 032435](https://github.com/user-attachments/assets/2782955d-81eb-4a61-bf14-c99eb8957952)
+
 ![Screenshot 2024-12-17 025805](https://github.com/user-attachments/assets/7485fcab-acbe-4df4-838b-8e5dbca2510b)
 
 ![Screenshot 2024-12-16 012411](https://github.com/user-attachments/assets/faf609f1-248b-4d8e-86bd-60c1fb726a5c)
@@ -62,14 +64,12 @@ This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan
 
 ## Building
 
-**Currently only supports Windows 10/11 with Visual Studio 2022, to be tested on Linux.**
+**Currently supports only Windows 10/11 with Visual Studio 2022, to be tested on Linux.**
 
 Requires:
-- CUDA Toolkit
+- CUDA Toolkit (NVIDIA GPU required)
 - Vulkan SDK
-- GLFW
-- GLM
-- ImGui
+- GLFW, GLM, ImGui, stb and nlohmann's json (included as submodules)
 
 #### Windows
 
@@ -80,7 +80,6 @@ Requires:
 3. Run the build script: `Scripts/build.bat`
 
 4. Open the resulting solution file: `cd build && start Ataraxia.sln`
-
 
 ## Usage
 
@@ -98,4 +97,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a pull request.
+Contributions are welcome! Please feel free to submit a pull request or open an issue if you have suggestions or improvements.

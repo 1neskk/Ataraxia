@@ -56,6 +56,26 @@ public:
         layer->onAttach();
     }
 
+	template<typename T>
+	T* getLayer()
+    {
+		for (const auto& layer : m_layers)
+		{
+			if (typeid(*layer.get()) == typeid(T))
+				return static_cast<T*>(layer.get());
+		}
+		return nullptr;
+    }
+
+	void popLayer()
+    {
+		if (!m_layers.empty())
+		{
+			m_layers.back()->onDetach();
+			m_layers.pop_back();
+		}
+    }
+
     void close();
     float getTime();
     void toggleFullscreen();

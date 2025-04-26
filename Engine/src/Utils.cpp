@@ -4,6 +4,7 @@ json Utils::serializeScene(const Scene& scene)
 {
     json j;
 
+    scene.rootNode->updateGlobalTransform();
     j["camera"] =
     {
         {"position", {scene.camera.getPosition().x, scene.camera.getPosition().y, scene.camera.getPosition().z}},
@@ -11,14 +12,9 @@ json Utils::serializeScene(const Scene& scene)
         {"fov", scene.camera.getFov()}
     };
 
-    for (const auto& sphere : scene.spheres)
+    if (scene.rootNode)
     {
-        j["spheres"].push_back(
-        {
-            {"center", {sphere.center.x, sphere.center.y, sphere.center.z}},
-            {"radius", sphere.radius},
-            {"materialIndex", sphere.id}
-        });
+        j["sceneGraph"] = serializeSceneNode(scene.rootNode);
     }
 
     for (const auto& material : scene.materials)
@@ -65,6 +61,39 @@ void Utils::exportScene(const Scene& scene, const std::string& filename)
     }
 }
 
+json Utils::serializeSceneNode(const std::shared_ptr<SceneNode>& node)
+{
+    json j;
+
+    j["name"] = node->getName();
+    j["transformation"] =
+    {
+        {"position", {node->getPosition().x, node->getPosition().y, node->getPosition().z}},
+        {"rotation", {node->getRotation().x, node->getRotation().y, node->getRotation().z, node->getRotation().w}},
+        {"scale", {node->getScale().x, node->getScale().y, node->getScale().z}}
+    };
+
+    for (const auto& sphere : node->getSpheres())
+    {
+        j["spheres"].push_back(
+        {
+            {"center", {sphere.center.x, sphere.center.y, sphere.center.z}},
+            {"radius", sphere.radius},
+            {"materialIndex", sphere.id}
+        });
+    }
+
+    if (!node->getChildren().empty())
+    {
+        for (const auto& child : node->getChildren())
+        {
+            j["children"].push_back(serializeSceneNode(child));
+        }
+    }
+
+    return j;
+}
+
 Scene Utils::deserializeScene(const json& j)
 {
     Scene scene;
@@ -73,13 +102,10 @@ Scene Utils::deserializeScene(const json& j)
     scene.camera.setDirection(glm::vec3(j["camera"]["direction"][0], j["camera"]["direction"][1], j["camera"]["direction"][2]));
     scene.camera.setFov(j["camera"]["fov"]);
 
-    for (const auto& sphere : j["spheres"])
+    if (j.contains("sceneGraph"))
     {
-        Sphere s;
-        s.center = glm::vec3(sphere["center"][0], sphere["center"][1], sphere["center"][2]);
-        s.radius = sphere["radius"];
-        s.id = sphere["materialIndex"];
-        scene.spheres.push_back(s);
+        deserializeSceneNode(j["sceneGraph"], scene.rootNode);
+		scene.rootNode->updateGlobalTransform();
     }
 
     for (const auto& material : j["materials"])
@@ -108,6 +134,42 @@ Scene Utils::deserializeScene(const json& j)
     scene.settings.accumulation = j["settings"]["accumulation"];
 
     return scene;
+}
+
+void Utils::deserializeSceneNode(const json& j, std::shared_ptr<SceneNode>& node)
+{
+    if (!node)
+        node = std::make_shared<SceneNode>(j["name"].get<std::string>());
+
+    glm::vec3 position(j["transformation"]["position"][0], j["transformation"]["position"][1], j["transformation"]["position"][2]);
+    glm::quat rotation(j["transformation"]["rotation"][3], j["transformation"]["rotation"][0], j["transformation"]["rotation"][1], j["transformation"]["rotation"][2]);
+    glm::vec3 scale(j["transformation"]["scale"][0], j["transformation"]["scale"][1], j["transformation"]["scale"][2]);
+
+    node->setPosition(position);
+    node->setRotation(rotation);
+    node->setScale(scale);
+
+    if (j.contains("spheres"))
+    {
+        for (const auto& sphere : j["spheres"])
+        {
+            Sphere s;
+            s.center = glm::vec3(sphere["center"][0], sphere["center"][1], sphere["center"][2]);
+            s.radius = sphere["radius"];
+            s.id = sphere["materialIndex"];
+            node->addSphere(s);
+        }
+    }
+
+	if (j.contains("children"))
+	{
+		for (const auto& child : j["children"])
+		{
+			std::shared_ptr<SceneNode> childNode;
+			deserializeSceneNode(child, childNode);
+			node->addChild(childNode);
+		}
+	}
 }
 
 Scene Utils::importScene(const std::string& filename)
