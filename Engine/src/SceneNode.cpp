@@ -19,7 +19,11 @@ void SceneNode::addChild(std::shared_ptr<SceneNode> child)
 
 void SceneNode::removeChild(std::shared_ptr<SceneNode> child)
 {
-    m_children.erase(std::remove(m_children.begin(), m_children.end(), child), m_children.end());
+    auto it = std::remove(m_children.begin(), m_children.end(), child);
+    if (it != m_children.end())
+    {
+	    m_children.erase(it, m_children.end());
+    }
 }
 
 void SceneNode::addSphere(const Sphere& sphere)
