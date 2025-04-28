@@ -365,6 +365,17 @@ Application& Application::get()
 void Application::init()
 {
 	glfwSetErrorCallback(glfw_error_callback);
+
+#ifdef __linux
+    const char* forceX11 = getenv("FORCE_X11");
+    if (forceX11 && strcmp(forceX11, "1") == 0)
+    {
+        std::cout << "FORCE_X11 is set to 1, forcing GLFW to use X11\n";
+        glfwInitHint(GLFW_X11_XCB_VULKAN_SURFACE, GLFW_TRUE);
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+    }
+#endif
+
 	if (!glfwInit())
 	{
 		std::cerr << "Could not initialize GLFW!\n";
@@ -374,15 +385,7 @@ void Application::init()
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
     
-    bool isWayland = glfwGetPlatform() == GLFW_PLATFORM_WAYLAND;
-    if (isWayland)
-        m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
-    else
-    {
-        glfwWindowHint(GLFW_POSITION_X, m_specs.windowPosX);
-        glfwWindowHint(GLFW_POSITION_Y, m_specs.windowPosY);
-        m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
-    }
+    m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
 
 	if (!glfwVulkanSupported())
 	{
@@ -408,20 +411,36 @@ void Application::init()
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+
+    bool supportsAbsoluteWindowPos = false;
+    bool supportsDocking = false;
+
+    // There must be a better way to do this
+    const int platform = glfwGetPlatform();
+    if (platform == GLFW_PLATFORM_WIN32)
+    {
+        supportsAbsoluteWindowPos = true;
+        supportsDocking = true;
+    }
+    else if (platform == GLFW_PLATFORM_X11)
+    {
+        supportsAbsoluteWindowPos = true;
+        supportsDocking = true;
+    }
+    else if (platform == GLFW_PLATFORM_WAYLAND)
+    {
+        supportsAbsoluteWindowPos = false;
+        supportsDocking = false;
+    }
+
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-    // Wayland specific
-    if (isWayland)
-    {
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-        io.ConfigViewportsNoAutoMerge = true;
-        io.ConfigViewportsNoTaskBarIcon = true;
-    }
-    else
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    if (supportsDocking)
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
+    if (supportsAbsoluteWindowPos)
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
 
