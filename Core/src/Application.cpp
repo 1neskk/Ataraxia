@@ -20,7 +20,7 @@ extern bool g_bRunning;
 #define IMGUI_VULKAN_DEBUG_REPORT
 #endif
 
-static VkAllocationCallbacks* g_allocator = nullptr;
+static VkAllocationCallbacks*   g_allocator = nullptr;
 static VkInstance               g_Instance = VK_NULL_HANDLE;
 static VkPhysicalDevice         g_PhysicalDevice = VK_NULL_HANDLE;
 static VkDevice                 g_Device = VK_NULL_HANDLE;
@@ -372,7 +372,17 @@ void Application::init()
 	}
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+    
+    bool isWayland = glfwGetPlatform() == GLFW_PLATFORM_WAYLAND;
+    if (isWayland)
+        m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
+    else
+    {
+        glfwWindowHint(GLFW_POSITION_X, m_specs.windowPosX);
+        glfwWindowHint(GLFW_POSITION_Y, m_specs.windowPosY);
+        m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
+    }
 
 	if (!glfwVulkanSupported())
 	{
@@ -401,7 +411,17 @@ void Application::init()
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+    // Wayland specific
+    if (isWayland)
+    {
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        io.ConfigViewportsNoAutoMerge = true;
+        io.ConfigViewportsNoTaskBarIcon = true;
+    }
+    else
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
 
 	ImGui::StyleColorsDark();
 
