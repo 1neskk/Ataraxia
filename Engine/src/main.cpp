@@ -60,6 +60,11 @@ public:
             m_renderer.resetFrameIndex();
         }
 
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
+        bool vsync = Application::get().isVSyncEnabled();
+        if (ImGui::Checkbox("V-Sync (Swap Chain REBUILD!)", &vsync))
+            Application::get().toggleVSync();
+
         ImGui::Separator();
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
 
