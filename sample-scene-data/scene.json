@@ -1,0 +1,197 @@
+{
+    "camera": {
+        "direction": [
+            0.21252265572547913,
+            -0.27462342381477356,
+            -0.937772274017334
+        ],
+        "fov": 45.0,
+        "position": [
+            -0.4735620319843292,
+            2.132383346557617,
+            8.049220085144043
+        ]
+    },
+    "lights": [
+        {
+            "color": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "intensity": 1.0,
+            "position": [
+                20.0,
+                20.0,
+                0.0
+            ]
+        }
+    ],
+    "materials": [
+        {
+            "F0": [
+                0.03999999910593033,
+                0.03999999910593033,
+                0.03999999910593033
+            ],
+            "albedo": [
+                1.0219999551773071,
+                0.7820000052452087,
+                0.3440000116825104
+            ],
+            "emissionColor": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissionIntensity": 0.0,
+            "metallic": 1.0,
+            "roughness": 0.6000000238418579
+        },
+        {
+            "F0": [
+                0.03999999910593033,
+                0.03999999910593033,
+                0.03999999910593033
+            ],
+            "albedo": [
+                1.0,
+                1.0,
+                1.0
+            ],
+            "emissionColor": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissionIntensity": 0.0,
+            "metallic": 0.0,
+            "roughness": 1.0
+        },
+        {
+            "F0": [
+                0.03999999910593033,
+                0.03999999910593033,
+                0.03999999910593033
+            ],
+            "albedo": [
+                0.972000002861023,
+                0.9599999785423279,
+                0.9150000214576721
+            ],
+            "emissionColor": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "emissionIntensity": 0.0,
+            "metallic": 1.0,
+            "roughness": 0.25
+        }
+    ],
+    "sceneGraph": {
+        "children": [
+            {
+                "children": [
+                    {
+                        "name": "GrandChildNode",
+                        "spheres": [
+                            {
+                                "center": [
+                                    1.0,
+                                    0.0,
+                                    0.0
+                                ],
+                                "materialIndex": 2,
+                                "radius": 1.0
+                            }
+                        ],
+                        "transformation": {
+                            "position": [
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "rotation": [
+                                0.0,
+                                0.0,
+                                0.0,
+                                0.0
+                            ],
+                            "scale": [
+                                1.0,
+                                1.0,
+                                1.0
+                            ]
+                        }
+                    }
+                ],
+                "name": "ChildNode1",
+                "spheres": [
+                    {
+                        "center": [
+                            0.0,
+                            -101.0,
+                            0.0
+                        ],
+                        "materialIndex": 1,
+                        "radius": 100.0
+                    }
+                ],
+                "transformation": {
+                    "position": [
+                        2.0,
+                        0.0,
+                        0.0
+                    ],
+                    "rotation": [
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    "scale": [
+                        1.0,
+                        1.0,
+                        1.0
+                    ]
+                }
+            }
+        ],
+        "name": "Scene",
+        "spheres": [
+            {
+                "center": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "materialIndex": 0,
+                "radius": 1.0
+            }
+        ],
+        "transformation": {
+            "position": [
+                0.0,
+                0.0,
+                0.0
+            ],
+            "rotation": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            "scale": [
+                1.0,
+                1.0,
+                1.0
+            ]
+        }
+    },
+    "settings": {
+        "accumulation": true,
+        "maxBounces": 25,
+        "skyLight": false
+    }
+}
