@@ -83,7 +83,7 @@ Requires:
 
 #### Linux
 > [!WARNING]
-> This projects has better support for X11, but it should work with Wayland as well. If there are any issues with Wayland, you can force X11 by setting the environment variable `FORCE_X11` to `1`.
+> This project has better support for X11, but it should work with Wayland as well. If there are any issues with Wayland, you can force X11 by setting the environment variable `FORCE_X11` to `1`.
 
 1. Clone recursively: `git clone --recursive https://github.com/1neskk/Ataraxia`
 
