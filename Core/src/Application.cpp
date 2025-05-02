@@ -205,11 +205,11 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface
 
     VkPresentModeKHR present_modes[2];
     if (vsyncEnabled)
-        present_modes[0] = VK_PRESENT_MODE_FIFO_KHR;
+        present_modes[0] = VK_PRESENT_MODE_FIFO_KHR; // V-Sync
     else
     {
-        present_modes[0] = VK_PRESENT_MODE_IMMEDIATE_KHR;
-        present_modes[1] = VK_PRESENT_MODE_MAILBOX_KHR;
+        present_modes[0] = VK_PRESENT_MODE_MAILBOX_KHR; // Triple buffering
+        present_modes[1] = VK_PRESENT_MODE_IMMEDIATE_KHR; // No waiting
     }
 
 	wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(g_PhysicalDevice, wd->Surface, &present_modes[0], vsyncEnabled ? 1 : 2);
