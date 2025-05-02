@@ -78,7 +78,10 @@ public:
 
     void close();
     float getTime();
+
     void toggleFullscreen();
+    void toggleVSync();
+    bool isVSyncEnabled() const { return m_vsyncEnabled; }
 
     GLFWwindow* getWindow() { return m_window; }
 
@@ -102,10 +105,10 @@ private:
     Specs m_specs;
     GLFWwindow* m_window = nullptr;
     bool m_running = true;
-
-	bool m_fullscreen = true;
-	GLFWmonitor* m_monitor = nullptr;
-	const GLFWvidmode* m_videoMode = nullptr;
+    bool m_vsyncEnabled = true;
+    bool m_fullscreen = true;
+    GLFWmonitor* m_monitor = nullptr;
+    const GLFWvidmode* m_videoMode = nullptr;
 
     float m_timeStep = 0.0f;
     float m_frameTime = 0.0f;

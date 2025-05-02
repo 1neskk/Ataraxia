@@ -60,6 +60,11 @@ public:
             m_renderer.resetFrameIndex();
         }
 
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 10);
+        bool vsync = Application::get().isVSyncEnabled();
+        if (ImGui::Checkbox("V-Sync (Swap Chain REBUILD!)", &vsync))
+            Application::get().toggleVSync();
+
         ImGui::Separator();
         ImGui::Text("Last Render Time: %.3fms | (%.1f FPS)", m_lastRenderTime, io.Framerate);
 
@@ -172,7 +177,8 @@ public:
         ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::Begin("Viewport");
+        ImGui::Begin("Viewport" , nullptr, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar);
+
         m_viewportWidth = static_cast<uint32_t>(ImGui::GetContentRegionAvail().x);
         m_viewportHeight = static_cast<uint32_t>(ImGui::GetContentRegionAvail().y);
 
@@ -298,6 +304,23 @@ Application* createApplication(int argc, char** argv)
             if (ImGui::MenuItem("Exit"))
                 app->close();
 
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu("Help"))
+        {
+            if (ImGui::MenuItem("About"))
+            {
+                ImGui::OpenPopup("About");
+            }
+            if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+            {
+                ImGui::Text("Ataraxia Alpha");
+                ImGui::Text("A simple Vulkan path-tracer");
+                ImGui::Text("Created by nesk");
+                ImGui::Separator();
+                ImGui::Text("Press ESC to close");
+                ImGui::EndPopup();
+            }
             ImGui::EndMenu();
         }
     });

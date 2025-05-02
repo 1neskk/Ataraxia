@@ -22,7 +22,7 @@ relwithdebinfo:
 	mkdir -p build
 	echo "Building project in RelWithDebInfo mode..."
 	cd build && \
-	cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .. && \
+	cmake -DCMAKE_BUILD_TYPE=relwithdebinfo .. && \
 	make
 
 .PHONY: clean

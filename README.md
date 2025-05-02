@@ -64,7 +64,7 @@ This project is a GPU-accelerated path tracing engine built with CUDA and Vulkan
 
 ## Building
 
-**Currently supports only Windows 10/11 with Visual Studio 2022, to be tested on Linux.**
+**Currently supports Windows 10/11 with Visual Studio 2022 and has been tested on Arch Linux (6.14.4-arch1-1 kernel).**
 
 Requires:
 - CUDA Toolkit (NVIDIA GPU required)
@@ -80,6 +80,18 @@ Requires:
 3. Run the build script: `Scripts/build.bat`
 
 4. Open the resulting solution file: `cd build && start Ataraxia.sln`
+
+#### Linux
+> [!WARNING]
+> This project has better support for X11, but it should work with Wayland as well. If there are any issues with Wayland, you can force X11 by setting the environment variable `FORCE_X11` to `1`.
+
+1. Clone recursively: `git clone --recursive https://github.com/1neskk/Ataraxia`
+
+2. Install the dependencies manually through your package manager or use the official websites (Scripts/dependencies.sh is not available yet).
+
+3. Run the build command: `make build`
+
+4. Open the resulting project file in your preferred IDE or run the executable directly from the build directory.
 
 ## Usage
 

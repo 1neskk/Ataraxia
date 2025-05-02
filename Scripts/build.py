@@ -21,7 +21,7 @@ def main():
     os.chdir(cwd + "/../build")
 
     if platform_name == "Windows":
-        run_command("cmake -G \"Visual Studio 17 2022\" -A x64 ..")
+        run_command("cmake -G \"Visual Studio 17 2022\" -A x64 -DCMAKE_BUILD_TYPE=release ..")
         print("Open the project in Visual Studio and build it.")
     else:
         run_command("cmake ..")

@@ -20,7 +20,7 @@ extern bool g_bRunning;
 #define IMGUI_VULKAN_DEBUG_REPORT
 #endif
 
-static VkAllocationCallbacks* g_allocator = nullptr;
+static VkAllocationCallbacks*   g_allocator = nullptr;
 static VkInstance               g_Instance = VK_NULL_HANDLE;
 static VkPhysicalDevice         g_PhysicalDevice = VK_NULL_HANDLE;
 static VkDevice                 g_Device = VK_NULL_HANDLE;
@@ -187,7 +187,7 @@ static void SetupVulkan(const char** extensions, uint32_t extensions_count)
 	}
 }
 
-static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height)
+static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface, int width, int height, bool vsyncEnabled)
 {
 	wd->Surface = surface;
 
@@ -203,14 +203,17 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface
 	const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 	wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(g_PhysicalDevice, wd->Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
 
-	// Select Present Mode
-#ifdef IMGUI_UNLIMITED_FRAME_RATE
-	VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
-#else
-	VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_FIFO_KHR };
-#endif
-	wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(g_PhysicalDevice, wd->Surface, &present_modes[0], IM_ARRAYSIZE(present_modes));
-	//printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
+    VkPresentModeKHR present_modes[2];
+    if (vsyncEnabled)
+        present_modes[0] = VK_PRESENT_MODE_FIFO_KHR; // V-Sync
+    else
+    {
+        present_modes[0] = VK_PRESENT_MODE_MAILBOX_KHR; // Triple buffering
+        present_modes[1] = VK_PRESENT_MODE_IMMEDIATE_KHR; // No waiting
+    }
+
+	wd->PresentMode = ImGui_ImplVulkanH_SelectPresentMode(g_PhysicalDevice, wd->Surface, &present_modes[0], vsyncEnabled ? 1 : 2);
+    //printf("[vulkan] Selected PresentMode = %d\n", wd->PresentMode);
 
 	IM_ASSERT(g_MinImageCount >= 2);
 	ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, wd, g_QueueFamily, g_allocator, width, height, g_MinImageCount);
@@ -365,6 +368,17 @@ Application& Application::get()
 void Application::init()
 {
 	glfwSetErrorCallback(glfw_error_callback);
+
+#ifdef __linux
+    const char* forceX11 = getenv("FORCE_X11");
+    if (forceX11 && strcmp(forceX11, "1") == 0)
+    {
+        std::cout << "FORCE_X11 is set to 1, forcing GLFW to use X11\n";
+        glfwInitHint(GLFW_X11_XCB_VULKAN_SURFACE, GLFW_TRUE);
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+    }
+#endif
+
 	if (!glfwInit())
 	{
 		std::cerr << "Could not initialize GLFW!\n";
@@ -372,7 +386,9 @@ void Application::init()
 	}
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
+    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+    
+    m_window = glfwCreateWindow(m_specs.width, m_specs.height, m_specs.name.c_str(), nullptr, nullptr);
 
 	if (!glfwVulkanSupported())
 	{
@@ -391,17 +407,43 @@ void Application::init()
 	int w, h;
 	glfwGetFramebufferSize(m_window, &w, &h);
 	ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
-	SetupVulkanWindow(wd, surface, w, h);
+	SetupVulkanWindow(wd, surface, w, h, m_vsyncEnabled);
 
 	s_AllocatedCommandBuffers.resize(wd->ImageCount);
 	s_ResourceFreeQueue.resize(wd->ImageCount);
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
+
+    bool supportsAbsoluteWindowPos = false;
+    bool supportsDocking = false;
+
+    // There must be a better way to do this
+    const int platform = glfwGetPlatform();
+    if (platform == GLFW_PLATFORM_WIN32)
+    {
+        supportsAbsoluteWindowPos = true;
+        supportsDocking = true;
+    }
+    else if (platform == GLFW_PLATFORM_X11)
+    {
+        supportsAbsoluteWindowPos = true;
+        supportsDocking = true;
+    }
+    else if (platform == GLFW_PLATFORM_WAYLAND)
+    {
+        supportsAbsoluteWindowPos = false;
+        supportsDocking = false;
+    }
+
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+    if (supportsDocking)
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    if (supportsAbsoluteWindowPos)
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 	ImGui::StyleColorsDark();
 
@@ -516,7 +558,8 @@ void Application::run()
 			if (width > 0 && height > 0)
 			{
 				ImGui_ImplVulkan_SetMinImageCount(g_MinImageCount);
-				ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_allocator, width, height, g_MinImageCount);
+				//ImGui_ImplVulkanH_CreateOrResizeWindow(g_Instance, g_PhysicalDevice, g_Device, &g_MainWindowData, g_QueueFamily, g_allocator, width, height, g_MinImageCount);
+                SetupVulkanWindow(&g_MainWindowData, g_MainWindowData.Surface, width, height, m_vsyncEnabled);
 				g_MainWindowData.FrameIndex = 0;
 
 				s_AllocatedCommandBuffers.clear();
@@ -619,6 +662,12 @@ void Application::toggleFullscreen()
 
 	m_fullscreen = !m_fullscreen;
 	g_SwapChainRebuild = true;
+}
+
+void Application::toggleVSync()
+{
+    m_vsyncEnabled = !m_vsyncEnabled;
+    g_SwapChainRebuild = true;
 }
 
 void Application::close()
