@@ -33,17 +33,11 @@ struct Material
 	float metallic = 0.0f;
 	glm::vec3 F0{ 0.04f };
 
-	glm::vec3 emissionColor{ 0.0f };
-	float emissionIntensity = 0.0f;
-
 	int id = 0;
 
-	__host__ __device__ glm::vec3 getEmission() const { return emissionColor * emissionIntensity; }
-
 	Material() = default;
-	Material(const glm::vec3& albedo, float roughness, float metallic, const glm::vec3& emissionColor, float emissionIntensity, int id)
-		: albedo(albedo), roughness(roughness), metallic(metallic), emissionColor(emissionColor), emissionIntensity(emissionIntensity), id(id) {
-	}
+	Material(const glm::vec3& albedo, float roughness, float metallic, int id)
+		: albedo(albedo), roughness(roughness), metallic(metallic), id(id) {}
 };
 
 struct Settings

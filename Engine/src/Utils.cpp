@@ -25,8 +25,6 @@ json Utils::serializeScene(const Scene& scene)
             {"roughness", material.roughness},
             {"metallic", material.metallic},
             {"F0", {material.F0.r, material.F0.g, material.F0.b}},
-            {"emissionIntensity", material.emissionIntensity},
-            {"emissionColor", {material.emissionColor.r, material.emissionColor.g, material.emissionColor.b}}
         });
     }
 
@@ -115,8 +113,6 @@ Scene Utils::deserializeScene(const json& j)
         m.roughness = material["roughness"];
         m.metallic = material["metallic"];
         m.F0 = glm::vec3(material["F0"][0], material["F0"][1], material["F0"][2]);
-        m.emissionIntensity = material["emissionIntensity"];
-        m.emissionColor = glm::vec3(material["emissionColor"][0], material["emissionColor"][1], material["emissionColor"][2]);
         scene.materials.push_back(m);
     }
 

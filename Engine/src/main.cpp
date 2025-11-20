@@ -153,9 +153,6 @@ public:
             ImGui::DragFloat("Metallic", &m_scene.materials[i].metallic, 0.01f, 0.0f, 1.0f);
             ImGui::DragFloat3("F0", &m_scene.materials[i].F0[0], 0.01f, 0.0f, 1.0f);
 
-            ImGui::ColorEdit3("Emission Color", reinterpret_cast<float*>(&m_scene.materials[i].emissionColor));
-            ImGui::DragFloat("Emission Intensity", &m_scene.materials[i].emissionIntensity, 0.01f, 0.0f, FLT_MAX);
-
             ImGui::Separator();
             ImGui::PopID();
         }
@@ -251,13 +248,13 @@ private:
         grandChildNode->addSphere(sphere3);
         childNode1->addChild(grandChildNode);
 
-        Material mat1(glm::vec3(1.022f, 0.782f, 0.344f), 1.0f, 0.0f, glm::vec3(0.0f), 0.0f, 0);
+        Material mat1(glm::vec3(1.022f, 0.782f, 0.344f), 1.0f, 0.0f,  0);
         m_scene.materials.push_back(mat1);
 
-        Material mat2(glm::vec3(1.0f, 0.0f, 0.0f), 0.3f, 0.0f, glm::vec3(0.0f), 0.0f, 1);
+        Material mat2(glm::vec3(1.0f, 0.0f, 0.0f), 0.3f, 0.0f,  1);
         m_scene.materials.push_back(mat2);
 
-        Material mat3(glm::vec3(0.972f, 0.960f, 0.915f), 0.25f, 1.0f, glm::vec3(0.0f), 0.0f, 2);
+        Material mat3(glm::vec3(0.972f, 0.960f, 0.915f), 0.25f, 1.0f, 2);
         m_scene.materials.push_back(mat3);
 
         Light light1(glm::vec3(10.0f, 10.0f, 0.0f), glm::vec3(1.0f), 1.0f);

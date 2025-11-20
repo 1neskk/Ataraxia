@@ -324,14 +324,6 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
 			materialIndex = 0;
 
         const Material* mat = &materials[id];
-
-        // Emission Logic
-        if (mat->emissionIntensity > 0.0f)
-        {
-            const glm::vec3 emission = mat->getEmission();
-            color += emission * throughput;
-        }
-
         glm::vec3 baseReflectivity = glm::mix(mat->F0, mat->albedo, mat->metallic);
 
         // Light Sampling Logic (only supports point lights for now)
@@ -361,28 +353,34 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
                 glm::vec3 specular = BRDF::cookTorrance(mat->albedo, baseReflectivity, mat->metallic, mat->roughness, N, V, L);
                 glm::vec3 emission = sampledLight.color * sampledLight.intensity;
 
-                // Calculate PDF (Probability Density Function), for point lights, it's 1.
-                float pdf = 1.0f;
+                float pdf = 1.0f / static_cast<float>(numLights);
 
                 color += emission * specular * throughput / pdf;
             }
         }
 
-        throughput *= mat->albedo;
         ray.origin = ht.worldPos + ht.worldNormal * 0.0001f;
 
-        // Randomly terminate the ray with a probability based on the throughput length in order to prevent infinite loops.
-        float p = glm::max(0.1f, glm::min(1.0f, glm::length(throughput)));
-        if (Random::Random::PcgFloat(seed) > p)
+        float specularProb = mat->metallic;
+        glm::vec3 bounceReflectivity;
+        if (Random::Random::PcgFloat(seed) < specularProb) {
+            ray.direction = BRDF::sampleGGX(ht.worldNormal, mat->roughness, seed);
+            bounceReflectivity = baseReflectivity;
+        }
+        else {
+            ray.direction = BRDF::sampleHemisphereCosineWeighted(ht.worldNormal, seed);
+            bounceReflectivity = mat->albedo;
+        }
+
+        throughput *= bounceReflectivity;
+
+        float rouletteProb = glm::max(throughput.x, glm::max(throughput.y, throughput.z));
+        rouletteProb = glm::min(rouletteProb, 0.95f);
+        if (Random::Random::PcgFloat(seed) > rouletteProb || rouletteProb <= 0.0f)
             break;
 
-        throughput /= p;
-
-        if (mat->metallic > 0.0f)
-            ray.direction = BRDF::sampleGGX(ht.worldNormal, mat->roughness, seed);
-        else
-            ray.direction = BRDF::sampleHemisphereCosineWeighted(ht.worldNormal, seed);
-    }
+        throughput /= rouletteProb;
+   }
     return { color, 1.0f };
 }
 
