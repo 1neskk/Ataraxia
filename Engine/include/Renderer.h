@@ -1,9 +1,10 @@
 #pragma once
 
 #include <memory>
-#include "Scene.h"
+#include "DeviceMemory.h"
 #include "Image.h"
-#include "Camera.h"
+#include "Scene.h"
+#include "BVH.h"
 #include "SceneNode.h"
 
 class Renderer
@@ -30,11 +31,11 @@ public:
 
     void resetFrameIndex() { m_frameIndex = 1; }
 
-	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);
+	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres, const BVHNode* nodes);
     static __device__ HitRecord rayMiss(const Ray& ray);
     static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
 	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
-        size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
+        size_t numSpheres, const BVHNode* nodes, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
         const Light* lights, size_t numLights, Settings settings);
 
 private:
@@ -48,6 +49,7 @@ private:
 	CudaBuffer<Sphere> d_spheres_; // device spheres
 	CudaBuffer<Material> d_materials_; // device materials
 	CudaBuffer<Light> d_lights_; // device lights
+    CudaBuffer<BVHNode> d_bvhNodes_; // device BVH nodes
 
     size_t m_numSpheres = 0;
     size_t m_numMaterials = 0;
@@ -63,6 +65,8 @@ private:
     uint32_t m_frameIndex = 1;
 
     uint32_t m_width = 0, m_height = 0;
+    
+    BVH m_bvh;
 };
 
 namespace colorUtils

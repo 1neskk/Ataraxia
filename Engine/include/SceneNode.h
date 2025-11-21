@@ -12,11 +12,11 @@ struct Sphere
 {
     glm::vec3 center;
     float radius;
-    int id = 0;
+    int materialIndex = 0;
 
     Sphere() = default;
-    Sphere(const glm::vec3& c, float r, int materialId)
-        : center(c), radius(r), id(materialId) {
+    Sphere(const glm::vec3& c, float r, int matIndex)
+        : center(c), radius(r), materialIndex(matIndex) {
     }
 };
 
