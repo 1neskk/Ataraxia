@@ -2,8 +2,16 @@ project(Engine CUDA CXX)
 
 enable_language(CUDA)
 
+include(FetchContent)
 find_package(CUDA REQUIRED)
 find_package(Vulkan REQUIRED)
+
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
+)
+
+FetchContent_MakeAvailable(googletest)
 
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_75 --expt-relaxed-constexpr -use_fast_math")
 
@@ -60,3 +68,6 @@ endif()
 set_target_properties(${PROJECT_NAME} PROPERTIES
     CUDA_SEPARABLE_COMPILATION ON
 )
+
+enable_testing()
+add_subdirectory(tests)

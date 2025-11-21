@@ -9,6 +9,14 @@ build:
 	cmake -DCMAKE_BUILD_TYPE=release .. && \
 	make
 
+.PHONY: test
+test:
+	mkdir -p build
+	echo "Building project in Release mode..."
+	cd build && \
+	cmake -DCMAKE_BUILD_TYPE=release .. && \
+	make EngineTests
+
 .PHONY: debug
 debug:
 	mkdir -p build
