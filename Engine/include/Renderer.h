@@ -30,6 +30,9 @@ public:
 
     void resetFrameIndex() { m_frameIndex = 1; }
 
+    void setHeadless(bool headless) { m_headless = headless; }
+    bool isHeadless() const { return m_headless; }
+
 	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres);
     static __device__ HitRecord rayMiss(const Ray& ray);
     static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
@@ -63,6 +66,7 @@ private:
     uint32_t m_frameIndex = 1;
 
     uint32_t m_width = 0, m_height = 0;
+    bool m_headless = false;
 };
 
 namespace colorUtils
