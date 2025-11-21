@@ -102,7 +102,7 @@ bool Camera::onUpdate(float dt)
 	if (m_viewDirty)
 	{
 		UpdateViewMatrix();
-		UpdateRayDirection();
+		UpdateViewMatrix();
 	}
 	return moved;
 }
@@ -123,7 +123,7 @@ void Camera::Resize(uint32_t width, uint32_t height)
 
 	m_projectionDirty = true;
 	UpdateProjectionMatrix();
-	UpdateRayDirection();
+	UpdateProjectionMatrix();
 }
 
 float Camera::getRotationSpeed()
@@ -158,41 +158,7 @@ void Camera::UpdateViewMatrix()
 	}
 }
 
-void Camera::UpdateRayDirection()
-{
-	if (m_rayDirection.size() != m_width * m_height)
-		m_rayDirection.resize(m_width * m_height);
 
-	std::vector<std::thread> threads;
-	const int numThreads = std::thread::hardware_concurrency();
-	const int rowsPerThread = m_height / numThreads;
-
-	for (int t = 0; t < numThreads; t++)
-	{
-		threads.emplace_back([this, t, numThreads, rowsPerThread]()
-		{
-			const int startY = t * rowsPerThread;
-			const int endY = (t == numThreads - 1) ? m_height : startY + rowsPerThread;
-			for (int y = startY; y < endY; y++)
-			{
-				for (uint32_t x = 0; x < m_width; x++)
-				{
-					glm::vec2 coord = { static_cast<float>(x) / static_cast<float>(m_width),
-										static_cast<float>(y) / static_cast<float>(m_height) };
-					coord = coord * 2.0f - 1.0f;
-
-					glm::vec4 target = m_inverseProjectionMatrix * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
-					glm::vec3 rayDir = glm::normalize(glm::vec3(m_inverseViewMatrix * glm::vec4(glm::normalize
-					(glm::vec3(target) / target.w), 0.0f)));
-					m_rayDirection[x + y * m_width] = rayDir;
-				}
-			}
-		});
-	}
-
-	for (auto& thread : threads)
-		thread.join();
-}
 
 void Camera::allocateDevice(DeviceCamera& deviceCamera) const
 {
@@ -200,21 +166,10 @@ void Camera::allocateDevice(DeviceCamera& deviceCamera) const
 	deviceCamera.direction = m_direction;
 	deviceCamera.width = m_width;
 	deviceCamera.height = m_height;
-
-	const size_t elementSize = static_cast<size_t>(m_width) * m_height;
-	const size_t byteSize = elementSize * sizeof(glm::vec3);
-
-	CUDA_CHECK(cudaMalloc(&deviceCamera.rayDirection, byteSize));
-	CUDA_CHECK(cudaMemcpy(deviceCamera.rayDirection, m_rayDirection.data(), byteSize, cudaMemcpyHostToDevice));
-	CUDA_CHECK(cudaDeviceSynchronize());
+	deviceCamera.inverseViewMatrix = m_inverseViewMatrix;
+	deviceCamera.inverseProjectionMatrix = m_inverseProjectionMatrix;
 }
 
 void Camera::freeDevice(DeviceCamera& deviceCamera)
 {
-	if (deviceCamera.rayDirection)
-	{
-		CUDA_CHECK(cudaDeviceSynchronize());
-		CUDA_CHECK(cudaFree(deviceCamera.rayDirection));
-		deviceCamera.rayDirection = nullptr;
-	}
 }

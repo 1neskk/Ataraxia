@@ -77,7 +77,7 @@ json Utils::serializeSceneNode(const std::shared_ptr<SceneNode>& node)
         {
             {"center", {sphere.center.x, sphere.center.y, sphere.center.z}},
             {"radius", sphere.radius},
-            {"materialIndex", sphere.id}
+            {"materialIndex", sphere.materialIndex}
         });
     }
 
@@ -152,7 +152,7 @@ void Utils::deserializeSceneNode(const json& j, std::shared_ptr<SceneNode>& node
             Sphere s;
             s.center = glm::vec3(sphere["center"][0], sphere["center"][1], sphere["center"][2]);
             s.radius = sphere["radius"];
-            s.id = sphere["materialIndex"];
+            s.materialIndex = sphere["materialIndex"];
             node->addSphere(s);
         }
     }
