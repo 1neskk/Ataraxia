@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdio>
 #include <glm/glm.hpp>
+#include <cuda_runtime.h>
 
 #define CUDA_CHECK(call) \
     do \

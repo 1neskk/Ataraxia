@@ -122,7 +122,7 @@ public:
                                 m_renderer.resetFrameIndex();
                             if (ImGui::DragFloat("Radius", const_cast<float*>(&node->getSpheres()[i].radius), 0.01f))
                                 m_renderer.resetFrameIndex();
-                            if (ImGui::Combo("Material", const_cast<int*>(&node->getSpheres()[i].id), "Material 1\0Material 2\0Material 3\0\0"))
+                            if (ImGui::Combo("Material", const_cast<int*>(&node->getSpheres()[i].materialIndex), "Material 1\0Material 2\0Material 3\0\0"))
                                 m_renderer.resetFrameIndex();
                         }
                         ImGui::PopID();

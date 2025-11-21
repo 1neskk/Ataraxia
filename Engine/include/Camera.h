@@ -8,7 +8,8 @@ struct DeviceCamera
 	glm::vec3 position, direction;
 	uint32_t width, height;
 
-	glm::vec3* rayDirection;
+	glm::mat4 inverseViewMatrix;
+	glm::mat4 inverseProjectionMatrix;
 };
 
 class Camera
@@ -26,7 +27,6 @@ public:
 		m_inverseViewMatrix = other.m_inverseViewMatrix;
 		m_position = other.m_position;
 		m_direction = other.m_direction;
-		m_rayDirection = other.m_rayDirection;
 		m_fov = other.m_fov;
 		m_nearClip = other.m_nearClip;
 		m_farClip = other.m_farClip;
@@ -57,13 +57,11 @@ public:
 	void setDirection(const glm::vec3& direction) { m_direction = direction; m_viewDirty = true; }
 	void setFov(float fov) { m_fov = fov; m_projectionDirty = true; }
 
-	const std::vector<glm::vec3>& getRayDirection() const { return m_rayDirection; }
 	static float getRotationSpeed();
 
 private:
 	void UpdateProjectionMatrix();
 	void UpdateViewMatrix();
-	void UpdateRayDirection();
 private:
 	glm::mat4 m_projectionMatrix{ 1.0f };
 	glm::mat4 m_viewMatrix{ 1.0f };
@@ -72,9 +70,6 @@ private:
 
 	glm::vec3 m_position{ 0.0f };
 	glm::vec3 m_direction{ 0.0f };
-
-	std::vector<glm::vec3> m_rayDirection;
-	CudaBuffer<glm::vec3> m_deviceRayDirBuffer;
 
 	float m_fov = 45.0f;
 	float m_nearClip = 0.1f;

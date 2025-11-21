@@ -29,18 +29,33 @@ void Renderer::allocateDeviceMemory(const Scene& scene)
 
     for (auto& sphere : collectedSpheres)
     {
-	    if (static_cast<uint32_t>(sphere.id) >= scene.materials.size())
+	    if (static_cast<uint32_t>(sphere.materialIndex) >= scene.materials.size())
 	    {
-			std::cerr << "Sphere ID out of bounds: " << sphere.id << "\n";
-			sphere.id = 0;
+			std::cerr << "Sphere ID out of bounds: " << sphere.materialIndex << "\n";
+			sphere.materialIndex = 0;
 	    }
     }
 
     m_numSpheres = collectedSpheres.size();
 
+    m_bvh.build(collectedSpheres);
+
+    const auto& nodes = m_bvh.getNodes();
+    const auto& indices = m_bvh.getSphereIndices();
+
+    std::vector<Sphere> reorderedSpheres(m_numSpheres);
+    for (size_t i = 0; i < m_numSpheres; i++)
+    {
+        reorderedSpheres[i] = collectedSpheres[indices[i]];
+    }
+
     d_spheres_.Release();
 	d_spheres_ = CudaBuffer<Sphere>(m_numSpheres);
-    d_spheres_.CopyFromHost(collectedSpheres.data(), m_numSpheres);
+    d_spheres_.CopyFromHost(reorderedSpheres.data(), m_numSpheres);
+
+    d_bvhNodes_.Release();
+    d_bvhNodes_ = CudaBuffer<BVHNode>(nodes.size());
+    d_bvhNodes_.CopyFromHost(nodes.data(), nodes.size());
 
 	m_numMaterials = scene.materials.size();
     
@@ -151,7 +166,7 @@ void Renderer::onResize(uint32_t width, uint32_t height)
 namespace
 {
     __global__ void kernelRender(uint32_t width, uint32_t height, uint32_t* imageData, const Sphere* spheres,
-        size_t numSpheres, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
+        size_t numSpheres, const BVHNode* nodes, const DeviceCamera d_camera, const Material* materials, size_t numMaterials, glm::vec4* accumulation,
         uint32_t frameIndex, const Light* lights, size_t numLights, Settings settings)
     {
         if (width == 0 || height == 0 || d_camera.width == 0 || d_camera.height == 0)
@@ -162,7 +177,7 @@ namespace
 
         if (x < width && y < height)
         {
-            const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, d_camera, materials, numMaterials, frameIndex,
+            const glm::vec4 color = Renderer::perPixel(x, y, width, spheres, numSpheres, nodes, d_camera, materials, numMaterials, frameIndex,
                 lights, numLights, settings);
             const uint32_t pixelIndex = x + y * width;
             accumulation[pixelIndex] += color;
@@ -223,7 +238,7 @@ void Renderer::Render(Camera& camera, const Scene& scene)
     std::vector<Sphere> collectedSpheres;
     traverseSceneGraph(scene.rootNode, glm::mat4(1.0f), collectedSpheres);
 
-    kernelRender<<<gridSize, blockSize>>>(m_width, m_height, d_imageData_.GetData(), d_spheres_.GetData(), m_numSpheres, d_camera,
+    kernelRender<<<gridSize, blockSize>>>(m_width, m_height, d_imageData_.GetData(), d_spheres_.GetData(), m_numSpheres, d_bvhNodes_.GetData(), d_camera,
         d_materials_.GetData(), m_numMaterials, d_accumulation_.GetData(), m_frameIndex, d_lights_.GetData(), m_numLights, m_settings);
 
     cudaError_t err = cudaGetLastError();
@@ -252,33 +267,102 @@ void Renderer::Render(Camera& camera, const Scene& scene)
         m_frameIndex = 1;
 }
 
-__device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres)
+__device__ bool intersectAABB(const Ray& ray, const glm::vec3& bmin, const glm::vec3& bmax, float& t)
+{
+    float tx1 = (bmin.x - ray.origin.x) / ray.direction.x;
+    float tx2 = (bmax.x - ray.origin.x) / ray.direction.x;
+    float tmin = glm::min(tx1, tx2);
+    float tmax = glm::max(tx1, tx2);
+    float ty1 = (bmin.y - ray.origin.y) / ray.direction.y;
+    float ty2 = (bmax.y - ray.origin.y) / ray.direction.y;
+    tmin = glm::max(tmin, glm::min(ty1, ty2));
+    tmax = glm::min(tmax, glm::max(ty1, ty2));
+    float tz1 = (bmin.z - ray.origin.z) / ray.direction.z;
+    float tz2 = (bmax.z - ray.origin.z) / ray.direction.z;
+    tmin = glm::max(tmin, glm::min(tz1, tz2));
+    tmax = glm::min(tmax, glm::max(tz1, tz2));
+    t = tmin;
+    return tmax >= tmin && tmax > 0.0f;
+}
+
+__device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres, const BVHNode* nodes)
 {
     int closestSphere = -1;
     float tmin = FLT_MAX;
 
-    for (size_t i = 0; i < numSpheres; i++)
+    uint32_t stack[32];
+    uint32_t stackPtr = 0;
+    stack[stackPtr++] = 0;
+
+    while (stackPtr > 0)
     {
-        const auto& [center, radius, id] = spheres[i];
+        uint32_t nodeIdx = stack[--stackPtr];
+        const BVHNode& node = nodes[nodeIdx];
 
-        glm::vec3 oc = ray.origin - center;
-
-        const float a = glm::dot(ray.direction, ray.direction);
-        const float b = 2.0f * glm::dot(oc, ray.direction);
-        const float c = glm::dot(oc, oc) - radius * radius;
-        const float discriminant = b * b - 4 * a * c;
-
-        if (discriminant < 0.0f)
+        float tBox;
+        if (!intersectAABB(ray, node.aabbMin, node.aabbMax, tBox))
+            continue;
+        
+        if (tBox > tmin)
             continue;
 
-        float t0 = (-b - sqrt(discriminant)) / (2.0f * a);
-        float t1 = (-b + sqrt(discriminant)) / (2.0f * a);
-        const float t = t0 < t1 ? t0 : t1;
-
-        if (t > 0.0f && t < tmin)
+        if (node.count > 0) // Leaf
         {
-            tmin = t;
-            closestSphere = static_cast<int>(i);
+            for (uint32_t i = 0; i < node.count; i++)
+            {
+                uint32_t sphereIdx = node.leftFirst + i;
+                const auto& [center, radius, materialIndex] = spheres[sphereIdx];
+
+                glm::vec3 oc = ray.origin - center;
+                float a = glm::dot(ray.direction, ray.direction);
+                float b = 2.0f * glm::dot(oc, ray.direction);
+                float c = glm::dot(oc, oc) - radius * radius;
+                float discriminant = b * b - 4 * a * c;
+
+                if (discriminant > 0.0f)
+                {
+                    float t0 = (-b - sqrt(discriminant)) / (2.0f * a);
+                    float t1 = (-b + sqrt(discriminant)) / (2.0f * a);
+                    float t = t0 < t1 ? t0 : t1;
+
+                    if (t > 0.0f && t < tmin)
+                    {
+                        tmin = t;
+                        closestSphere = static_cast<int>(sphereIdx);
+                    }
+                }
+            }
+        }
+        else // Internal
+        {
+            uint32_t leftIdx = node.leftFirst;
+            uint32_t rightIdx = leftIdx + 1;
+
+            float tLeft, tRight;
+            bool hitLeft = intersectAABB(ray, nodes[leftIdx].aabbMin, nodes[leftIdx].aabbMax, tLeft);
+            bool hitRight = intersectAABB(ray, nodes[rightIdx].aabbMin, nodes[rightIdx].aabbMax, tRight);
+
+            if (hitLeft && hitRight)
+            {
+                if (tLeft < tRight)
+                {
+                    stack[stackPtr++] = rightIdx;
+                    stack[stackPtr++] = leftIdx;
+                }
+                else
+                {
+                    stack[stackPtr++] = leftIdx;
+                    stack[stackPtr++] = rightIdx;
+                }
+            }
+            else if (hitLeft)
+            {
+                stack[stackPtr++] = leftIdx;
+            }
+            else if (hitRight)
+            {
+                stack[stackPtr++] = rightIdx;
+            }
         }
     }
 
@@ -289,27 +373,43 @@ __device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* 
 }
 
 __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
-    size_t numSpheres, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
+    size_t numSpheres, const BVHNode* nodes, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
     const Light* lights, size_t numLights, Settings settings)
 {
+    uint32_t seed = x + y * width;
+    seed *= frameIndex;
+
+    glm::vec2 coord = { static_cast<float>(x) / static_cast<float>(width),
+                        static_cast<float>(y) / static_cast<float>(d_camera.height) };
+    coord = coord * 2.0f - 1.0f; // -1 to 1
+
+    // Anti-Aliasing Jitter
+    if (frameIndex > 1)
+    {
+        float jitterX = Random::Random::PcgFloat(seed) - 0.5f;
+        float jitterY = Random::Random::PcgFloat(seed) - 0.5f;
+        coord.x += (jitterX / static_cast<float>(width)) * 2.0f;
+        coord.y += (jitterY / static_cast<float>(d_camera.height)) * 2.0f;
+    }
+
+    glm::vec4 target = d_camera.inverseProjectionMatrix * glm::vec4(coord.x, coord.y, 1.0f, 1.0f);
+    glm::vec3 rayDir = glm::normalize(glm::vec3(d_camera.inverseViewMatrix * glm::vec4(glm::normalize(glm::vec3(target) / target.w), 0.0f)));
+
     Ray ray;
     ray.origin = d_camera.position;
-    ray.direction = d_camera.rayDirection[x + y * width];
+    ray.direction = rayDir;
 
     glm::vec3 color(0.0f);
 
     // The throughput vector accounts for the attenuation of light as it bounces around the scene.
     glm::vec3 throughput(1.0f);
 
-    uint32_t seed = x + y * width;
-    seed *= frameIndex;
-
     int bounces = settings.maxBounces;
     for (int i = 0; i < bounces; i++)
     {
         seed += i;
 
-        HitRecord ht = traceRay(ray, spheres, numSpheres);
+        HitRecord ht = traceRay(ray, spheres, numSpheres, nodes);
         if (ht.t < 0.0f)
         {
             if (settings.skyLight)
@@ -321,13 +421,13 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
             break;
         }
 
-        const auto& [center, radius, id] = spheres[ht.id];
+        const auto& [center, radius, matIndex] = spheres[ht.id];
 
-        uint32_t materialIndex = id;
+        uint32_t materialIndex = matIndex;
 		if (materialIndex >= numMaterials)
 			materialIndex = 0;
 
-        const Material* mat = &materials[id];
+        const Material* mat = &materials[matIndex];
         glm::vec3 baseReflectivity = glm::mix(mat->F0, mat->albedo, mat->metallic);
 
         // Light Sampling Logic (only supports point lights for now)
@@ -344,7 +444,7 @@ __device__ glm::vec4 Renderer::perPixel(uint32_t x, uint32_t y, uint32_t width, 
             shadowRay.origin = ht.worldPos + ht.worldNormal * 0.0001f;
             shadowRay.direction = L;
 
-            HitRecord shadowHt = traceRay(shadowRay, spheres, numSpheres);
+            HitRecord shadowHt = traceRay(shadowRay, spheres, numSpheres, nodes);
             if (shadowHt.t > 0.0f && shadowHt.t * shadowHt.t < distanceSquared)
             {
                 // Light is occluded; skip contribution.
