@@ -1,53 +1,48 @@
 #pragma once
 
-#include <string>
 #include "vulkan/vulkan.h"
+#include <string>
 
-enum class ImageType
-{
-	None = 0,
-	RGBA,
-	RGBA32F
-};
+enum class ImageType { None = 0, RGBA, RGBA32F };
 
-class Image
-{
+class Image {
 public:
-	Image(std::string_view path);
-	Image(uint32_t width, uint32_t height, ImageType type, const void* data = nullptr);
-	~Image();
+  Image(std::string_view path);
+  Image(uint32_t width, uint32_t height, ImageType type,
+        const void *data = nullptr);
+  ~Image();
 
-	void setData(const void* data);
+  void setData(const void *data);
 
-	VkDescriptorSet getDescriptorSet() const { return m_descriptorSet; }
+  VkDescriptorSet getDescriptorSet() const { return m_descriptorSet; }
 
-	void resize(uint32_t width, uint32_t height);
+  void resize(uint32_t width, uint32_t height);
 
-	uint32_t getWidth() const { return m_width; }
-	uint32_t getHeight() const { return m_height; }
+  uint32_t getWidth() const { return m_width; }
+  uint32_t getHeight() const { return m_height; }
 
-	VkImage getHandle() const { return m_image; }
-
-private:
-	void allocateMemory(uint64_t size);
-	void release();
+  VkImage getHandle() const { return m_image; }
 
 private:
-	uint32_t m_width = 0, m_height = 0;
+  void allocateMemory(uint64_t size);
+  void release();
 
-	VkDescriptorSet m_descriptorSet = nullptr;
+private:
+  uint32_t m_width = 0, m_height = 0;
 
-	VkImage m_image = nullptr;
-	VkImageView m_imageView = nullptr;
-	VkDeviceMemory m_memory = nullptr;
-	VkSampler m_sampler = nullptr;
+  VkDescriptorSet m_descriptorSet = nullptr;
 
-	ImageType m_type = ImageType::None;
+  VkImage m_image = nullptr;
+  VkImageView m_imageView = nullptr;
+  VkDeviceMemory m_memory = nullptr;
+  VkSampler m_sampler = nullptr;
 
-	VkBuffer m_buffer = nullptr;
-	VkDeviceMemory m_bufferMemory = nullptr;
+  ImageType m_type = ImageType::None;
 
-	size_t m_size = 0;
+  VkBuffer m_buffer = nullptr;
+  VkDeviceMemory m_bufferMemory = nullptr;
 
-	std::string m_filepath;
+  size_t m_size = 0;
+
+  std::string m_filepath;
 };
