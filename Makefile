@@ -27,7 +27,7 @@ clean:
 
 format:
 	echo "Formatting code..."
-	clang-format Core/include/*.h Core/src/*.cpp Engine/include/*.h Engine/src/*.cpp -i --style=file
+	clang-format Core/include/*.h Core/src/*.cpp Core/src/*.cu Engine/include/*.h Engine/src/*.cpp Engine/src/*.cu -i --style=file
 
 help:
 	@echo "Available targets:"
