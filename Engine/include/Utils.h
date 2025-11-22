@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Scene.h"
-#include "SceneNode.h"
 #include <fstream>
 #include <iostream>
 #include <nlohmann/json.hpp>
+
+#include "Scene.h"
+#include "SceneNode.h"
 
 using json = nlohmann::json;
 
@@ -19,4 +20,4 @@ Scene importScene(const std::string &filename);
 
 json serializeSceneNode(const std::shared_ptr<SceneNode> &node);
 void deserializeSceneNode(const json &j, std::shared_ptr<SceneNode> &node);
-} // namespace Utils
+}  // namespace Utils
