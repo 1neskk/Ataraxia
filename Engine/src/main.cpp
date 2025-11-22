@@ -31,7 +31,7 @@ public:
         m_scene.rootNode->updateGlobalTransform();
     }
     
-    virtual void onGuiRender() override
+    virtual void onRender() override
     {
         const auto& io = ImGui::GetIO();
 
@@ -303,22 +303,29 @@ Application* createApplication(int argc, char** argv)
 
             ImGui::EndMenu();
         }
+        bool openAboutPopup = false;
         if (ImGui::BeginMenu("Help"))
         {
             if (ImGui::MenuItem("About"))
             {
-                ImGui::OpenPopup("About");
-            }
-            if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
-            {
-                ImGui::Text("Ataraxia Alpha");
-                ImGui::Text("A simple Vulkan path-tracer");
-                ImGui::Text("Created by nesk");
-                ImGui::Separator();
-                ImGui::Text("Press ESC to close");
-                ImGui::EndPopup();
+                openAboutPopup = true;
             }
             ImGui::EndMenu();
+        }
+
+        if (openAboutPopup)
+            ImGui::OpenPopup("About");
+
+        if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::Text("Ataraxia Alpha");
+            ImGui::Text("A simple Path-tracing engine");
+            ImGui::Text("Created by nesk");
+            ImGui::Separator();
+            ImGui::Text("Press ESC to close");
+            if (ImGui::IsKeyPressed(ImGuiKey_Escape))
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
         }
     });
     return app;

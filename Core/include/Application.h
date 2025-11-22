@@ -18,7 +18,7 @@ public:
     virtual void onDetach() {}
 
     virtual void onUpdate(float ts) {}
-    virtual void onGuiRender() {}
+    virtual void onRender() {}
 };
 
 void checkVkResult(VkResult result);

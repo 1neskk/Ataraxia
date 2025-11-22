@@ -615,7 +615,7 @@ void Application::run()
 			}
 
 			for (auto& layer : m_layers)
-				layer->onGuiRender();
+				layer->onRender();
 
 			ImGui::End();
 		}

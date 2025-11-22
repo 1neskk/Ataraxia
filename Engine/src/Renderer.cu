@@ -286,6 +286,9 @@ __device__ Renderer::HitRecord Renderer::traceRay(const Ray& ray, const Sphere* 
     int closestSphere = -1;
     float tmin = FLT_MAX;
 
+    if (numSpheres == 0 || nodes == nullptr)
+        return rayMiss(ray);
+
     uint32_t stack[32];
     uint32_t stackPtr = 0;
     stack[stackPtr++] = 0;
