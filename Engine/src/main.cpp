@@ -1,6 +1,5 @@
-#include "main.h"
-
 #include "Application.h"
+#include "main.h"
 #include "Image.h"
 #include "Renderer.h"
 #include "Timer.h"
