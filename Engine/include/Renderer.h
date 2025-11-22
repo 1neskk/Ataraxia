@@ -68,6 +68,9 @@ private:
     uint32_t m_frameIndex = 1;
 
     uint32_t m_width = 0, m_height = 0;
+
+    BVH m_bvh;
+    bool m_headless = false;
 };
 
 namespace colorUtils

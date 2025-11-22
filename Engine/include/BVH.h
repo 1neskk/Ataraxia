@@ -20,6 +20,7 @@ public:
 
     const std::vector<BVHNode>& getNodes() const { return m_nodes; }
     const std::vector<int>& getSphereIndices() const { return m_sphereIndices; }
+    const std::vector<Sphere>& getSpheres() const { return *m_spheres; }
 
 private:
     void updateNodeBounds(uint32_t nodeIdx);
