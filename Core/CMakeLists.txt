@@ -1,11 +1,11 @@
+cmake_minimum_required(VERSION 3.20)
 project(Core CUDA CXX)
 
-enable_language(CUDA)
-
-find_package(CUDA REQUIRED)
 find_package(Vulkan REQUIRED)
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_50 --expt-relaxed-constexpr")
+set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
+set(CMAKE_CUDA_ARCHITECTURES 75)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glm)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/imgui)
@@ -29,7 +29,7 @@ add_library(ImGui STATIC
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glfw ${CMAKE_BINARY_DIR}/thirdparty/glfw)
 
 include_directories(${Vulkan_INCLUDE_DIRS})
-include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
 add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/input/Input.cpp

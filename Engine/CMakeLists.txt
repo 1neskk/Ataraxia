@@ -1,11 +1,11 @@
+cmake_minimum_required(VERSION 3.20)
 project(Engine CUDA CXX)
 
-enable_language(CUDA)
-
-find_package(CUDA REQUIRED)
 find_package(Vulkan REQUIRED)
 
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_75 --expt-relaxed-constexpr -use_fast_math")
+set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr -use_fast_math")
+set(CMAKE_CUDA_ARCHITECTURES 75)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glm)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/imgui)
@@ -13,7 +13,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glfw/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/stb)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/json/include)
 
-include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 include_directories(${Vulkan_INCLUDE_DIRS})
 
 file(GLOB ENGINE_SOURCES
