@@ -4,6 +4,9 @@
 
 void BVH::build(const std::vector<Sphere> &spheres) {
     m_spheres = &spheres;
+    if (spheres.empty())
+        return;
+
     m_nodes.resize(spheres.size() * 2);
     m_sphereIndices.resize(spheres.size());
     for (size_t i = 0; i < spheres.size(); i++) m_sphereIndices[i] = i;

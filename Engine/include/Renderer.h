@@ -30,32 +30,28 @@ class Renderer {
 
     void resetFrameIndex() { m_frameIndex = 1; }
 
-    static __device__ HitRecord traceRay(const Ray &ray, const Sphere *spheres,
-                                         size_t numSpheres,
-                                         const BVHNode *nodes);
-    static __device__ HitRecord rayMiss(const Ray &ray);
-    static __device__ HitRecord rayHit(const Ray &ray, float tmin, int index,
-                                       const Sphere *spheres);
-    static __device__ glm::vec4 perPixel(
-        uint32_t x, uint32_t y, uint32_t width, const Sphere *spheres,
-        size_t numSpheres, const BVHNode *nodes, const DeviceCamera &d_camera,
-        const Material *materials, size_t numMaterials, uint32_t frameIndex,
-        const Light *lights, size_t numLights, Settings settings);
+    void setHeadless(bool headless) { m_headless = headless; }
+    bool isHeadless() const { return m_headless; }
 
-   private:
-    void allocateDeviceMemory(const Scene &scene);
-    void freeDeviceMemory();
+	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres, const BVHNode* nodes);
+    static __device__ HitRecord rayMiss(const Ray& ray);
+    static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
+	static __device__ glm::vec4 perPixel(uint32_t x, uint32_t y, uint32_t width, const Sphere* spheres,
+        size_t numSpheres, const BVHNode* nodes, const DeviceCamera& d_camera, const Material* materials, size_t numMaterials, uint32_t frameIndex,
+        const Light* lights, size_t numLights, Settings settings);
 
-    static void traverseSceneGraph(const std::shared_ptr<SceneNode> &node,
-                                   const glm::mat4 &parentTransform,
-                                   std::vector<Sphere> &spheres);
+private:
+	void allocateDeviceMemory(const Scene& scene);
+	void freeDeviceMemory();
 
-   private:
-    const Scene *m_scene = nullptr;
-    CudaBuffer<Sphere> d_spheres_;      // device spheres
-    CudaBuffer<Material> d_materials_;  // device materials
-    CudaBuffer<Light> d_lights_;        // device lights
-    CudaBuffer<BVHNode> d_bvhNodes_;    // device BVH nodes
+	static void traverseSceneGraph(const std::shared_ptr<SceneNode>& node, const glm::mat4& parentTransform, std::vector<Sphere>& spheres);
+
+private:
+    const Scene* m_scene = nullptr;
+	  CudaBuffer<Sphere> d_spheres_; // device spheres
+	  CudaBuffer<Material> d_materials_; // device materials
+	  CudaBuffer<Light> d_lights_; // device lights
+    CudaBuffer<BVHNode> d_bvhNodes_; // device BVH nodes
 
     size_t m_numSpheres = 0;
     size_t m_numMaterials = 0;
@@ -73,6 +69,7 @@ class Renderer {
     uint32_t m_width = 0, m_height = 0;
 
     BVH m_bvh;
+    bool m_headless = false;
 };
 
 namespace colorUtils {
