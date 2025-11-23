@@ -30,9 +30,6 @@ class Renderer {
 
     void resetFrameIndex() { m_frameIndex = 1; }
 
-    void setHeadless(bool headless) { m_headless = headless; }
-    bool isHeadless() const { return m_headless; }
-
 	static __device__ HitRecord traceRay(const Ray& ray, const Sphere* spheres, size_t numSpheres, const BVHNode* nodes);
     static __device__ HitRecord rayMiss(const Ray& ray);
     static __device__ HitRecord rayHit(const Ray& ray, float tmin, int index, const Sphere* spheres);
@@ -48,9 +45,9 @@ private:
 
 private:
     const Scene* m_scene = nullptr;
-	  CudaBuffer<Sphere> d_spheres_; // device spheres
-	  CudaBuffer<Material> d_materials_; // device materials
-	  CudaBuffer<Light> d_lights_; // device lights
+	CudaBuffer<Sphere> d_spheres_; // device spheres
+	CudaBuffer<Material> d_materials_; // device materials
+	CudaBuffer<Light> d_lights_; // device lights
     CudaBuffer<BVHNode> d_bvhNodes_; // device BVH nodes
 
     size_t m_numSpheres = 0;
@@ -69,7 +66,6 @@ private:
     uint32_t m_width = 0, m_height = 0;
 
     BVH m_bvh;
-    bool m_headless = false;
 };
 
 namespace colorUtils {

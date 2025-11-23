@@ -116,27 +116,23 @@ void Renderer::onResize(uint32_t width, uint32_t height) {
         return;
 
 #ifdef _DEBUG
-    if (!m_headless)
+    try
     {
-        try
-        {
-            m_image = std::make_shared<Image>(width, height, ImageType::RGBA);
-        }
-        catch (const std::exception& e)
-        {
-            std::cerr << "Failed to create image: " << e.what() << "\n";
-            return;
-        }
+        m_image = std::make_shared<Image>(width, height, ImageType::RGBA);
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Failed to create image: " << e.what() << "\n";
+        return;
+    }
 
-        if (!m_image)
-        {
-            std::cerr << "Failed to create image" << "\n";
-            return;
-        }
+    if (!m_image)
+    {
+        std::cerr << "Failed to create image" << "\n";
+        return;
     }
 #else
-    if (!m_headless)
-        m_image = std::make_shared<Image>(width, height, ImageType::RGBA);
+    m_image = std::make_shared<Image>(width, height, ImageType::RGBA);
 #endif
 
     delete[] h_imageData_;
@@ -202,7 +198,7 @@ void Renderer::Render(Camera& camera, const Scene& scene) {
             d_accumulation_.GetData(), 0,
             static_cast<uint64_t>(m_width) * m_height * sizeof(glm::vec4));
 
-    if (!m_image && !m_headless)
+    if (!m_image)
         return;
 
     DeviceCamera d_camera;
@@ -267,8 +263,7 @@ void Renderer::Render(Camera& camera, const Scene& scene) {
     d_imageData_.CopyToHost(h_imageData_,
                             static_cast<size_t>(m_width) * m_height);
 
-    if (!m_headless && m_image)
-        m_image->setData(h_imageData_);
+    m_image->setData(h_imageData_);
     Camera::freeDevice(d_camera);
 
     if (m_settings.accumulation)
