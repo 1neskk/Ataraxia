@@ -99,7 +99,6 @@ class Ataraxia final : public Layer {
 
         drawNode(m_scene.rootNode);
         
-        // Deselect if clicking on empty space in Hierarchy window
         if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
             m_selectedNode = nullptr;
         }
@@ -141,12 +140,6 @@ class Ataraxia final : public Layer {
 
             ImGui::Spacing();
 
-            if (!m_selectedNode && !m_selectedNode->getSpheres().empty()) { // Check if node still exists (it might have been deleted above, though m_selectedNode is set to null so this check is safe but redundant if null)
-                 // Actually if we set m_selectedNode to nullptr above, we shouldn't access it.
-                 // But the if block above sets it to nullptr.
-                 // Let's restructure to avoid accessing nullptr.
-            }
-            
             if (m_selectedNode && !m_selectedNode->getSpheres().empty()) {
                 ImGui::Text("Spheres");
                 ImGui::Separator();
