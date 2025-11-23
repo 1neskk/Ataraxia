@@ -17,7 +17,7 @@ struct BVHNode {
 class BVH {
    public:
     BVH() = default;
-    void build(const std::vector<Sphere> &spheres);
+    void build(const std::vector<Sphere>& spheres);
 
     const std::vector<BVHNode>& getNodes() const { return m_nodes; }
     const std::vector<int>& getSphereIndices() const { return m_sphereIndices; }
@@ -29,6 +29,6 @@ class BVH {
    private:
     std::vector<BVHNode> m_nodes;
     std::vector<int> m_sphereIndices;
-    const std::vector<Sphere> *m_spheres = nullptr;
+    const std::vector<Sphere>* m_spheres = nullptr;
     uint32_t m_nodesUsed = 0;
 };

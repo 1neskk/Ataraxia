@@ -1,5 +1,6 @@
-#include "Application.h"
 #include "main.h"
+
+#include "Application.h"
 #include "Image.h"
 #include "Renderer.h"
 #include "Timer.h"
@@ -78,7 +79,7 @@ class Ataraxia final : public Layer {
                     ImGuiTreeNodeFlags_OpenOnArrow |
                     ImGuiTreeNodeFlags_OpenOnDoubleClick |
                     ImGuiTreeNodeFlags_SpanFullWidth;
-                
+
                 if (m_selectedNode == node) {
                     flags |= ImGuiTreeNodeFlags_Selected;
                 }
@@ -98,11 +99,11 @@ class Ataraxia final : public Layer {
             };
 
         drawNode(m_scene.rootNode);
-        
+
         if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
             m_selectedNode = nullptr;
         }
-        
+
         ImGui::End();
 
         ImGui::Begin("Inspector");
@@ -125,8 +126,9 @@ class Ataraxia final : public Layer {
                 m_renderer.resetFrameIndex();
             }
             if (ImGui::DragFloat3(
-                    "Scale", const_cast<float *>(&m_selectedNode->getScale()[0]),
-                    0.01f, 0.0f, FLT_MAX)) {
+                    "Scale",
+                    const_cast<float *>(&m_selectedNode->getScale()[0]), 0.01f,
+                    0.0f, FLT_MAX)) {
                 m_selectedNode->setScale(m_selectedNode->getScale());
                 m_renderer.resetFrameIndex();
             }
@@ -143,10 +145,10 @@ class Ataraxia final : public Layer {
             if (m_selectedNode && !m_selectedNode->getSpheres().empty()) {
                 ImGui::Text("Spheres");
                 ImGui::Separator();
-                for (size_t i = 0; i < m_selectedNode->getSpheres().size(); i++) {
+                for (size_t i = 0; i < m_selectedNode->getSpheres().size();
+                     i++) {
                     ImGui::PushID(static_cast<int32_t>(i));
-                    std::string sphereLabel =
-                        "Sphere " + std::to_string(i + 1);
+                    std::string sphereLabel = "Sphere " + std::to_string(i + 1);
                     if (ImGui::CollapsingHeader(
                             sphereLabel.c_str(),
                             ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -162,12 +164,12 @@ class Ataraxia final : public Layer {
                                     &m_selectedNode->getSpheres()[i].radius),
                                 0.01f))
                             m_renderer.resetFrameIndex();
-                        if (ImGui::Combo(
-                                "Material",
-                                const_cast<int *>(&m_selectedNode->getSpheres()[i]
-                                                       .materialIndex),
-                                "Material 1\0Material 2\0Material "
-                                "3\0\0"))
+                        if (ImGui::Combo("Material",
+                                         const_cast<int *>(
+                                             &m_selectedNode->getSpheres()[i]
+                                                  .materialIndex),
+                                         "Material 1\0Material 2\0Material "
+                                         "3\0\0"))
                             m_renderer.resetFrameIndex();
                     }
                     ImGui::PopID();
