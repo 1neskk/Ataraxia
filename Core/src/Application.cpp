@@ -14,6 +14,7 @@
 
 #include "backends/imgui_impl_glfw.cpp"
 #include "imgui/Roboto-Regular.embed"
+#include "imgui_internal.h"
 
 extern bool g_bRunning;
 
@@ -617,6 +618,31 @@ void Application::run() {
             ImGuiIO &io = ImGui::GetIO();
             if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
                 ImGuiID dockspace_id = ImGui::GetID("VulkanAppDockspace");
+
+                static bool first_time = true;
+                if (first_time) {
+                    first_time = false;
+
+                    if (ImGui::DockBuilderGetNode(dockspace_id) == NULL) {
+                        ImGui::DockBuilderRemoveNode(dockspace_id); // Clear out existing layout
+                        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace); // Add empty node
+                        ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+
+                        ImGuiID dock_main_id = dockspace_id;
+                        ImGuiID dock_id_left = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+                        ImGuiID dock_id_right = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.25f, nullptr, &dock_main_id);
+                        ImGuiID dock_id_right_down = ImGui::DockBuilderSplitNode(dock_id_right, ImGuiDir_Down, 0.50f, nullptr, &dock_id_right);
+
+                        ImGui::DockBuilderDockWindow("Hierarchy", dock_id_left);
+                        ImGui::DockBuilderDockWindow("Inspector", dock_id_right);
+                        ImGui::DockBuilderDockWindow("Settings", dock_id_right_down);
+                        ImGui::DockBuilderDockWindow("Material settings", dock_id_right_down);
+                        ImGui::DockBuilderDockWindow("Light settings", dock_id_right_down);
+                        ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
+                        ImGui::DockBuilderFinish(dockspace_id);
+                    }
+                }
+
                 ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f),
                                  dockspace_flags);
             }

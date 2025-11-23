@@ -78,85 +78,109 @@ class Ataraxia final : public Layer {
                     ImGuiTreeNodeFlags_OpenOnArrow |
                     ImGuiTreeNodeFlags_OpenOnDoubleClick |
                     ImGuiTreeNodeFlags_SpanFullWidth;
-                if (ImGui::TreeNodeEx(node->getName().c_str(), flags)) {
-                    ImGui::Indent();
+                
+                if (m_selectedNode == node) {
+                    flags |= ImGuiTreeNodeFlags_Selected;
+                }
 
-                    ImGui::Text("Transform");
-                    ImGui::Separator();
+                bool opened = ImGui::TreeNodeEx(node->getName().c_str(), flags);
+                if (ImGui::IsItemClicked()) {
+                    m_selectedNode = node;
+                }
 
-                    if (ImGui::DragFloat3(
-                            "Position",
-                            const_cast<float *>(&node->getPosition()[0]),
-                            0.01f)) {
-                        node->setPosition(node->getPosition());
-                        m_renderer.resetFrameIndex();
-                    }
-                    if (ImGui::DragFloat3(
-                            "Rotation",
-                            const_cast<float *>(&node->getRotation()[0]),
-                            0.01f)) {
-                        node->setRotation(node->getRotation());
-                        m_renderer.resetFrameIndex();
-                    }
-                    if (ImGui::DragFloat3(
-                            "Scale", const_cast<float *>(&node->getScale()[0]),
-                            0.01f, 0.0f, FLT_MAX)) {
-                        node->setScale(node->getScale());
-                        m_renderer.resetFrameIndex();
-                    }
-
-                    ImGui::Spacing();
-                    if (ImGui::Button("Remove Node")) {
-                        m_scene.rootNode->removeChild(node);
-                        m_renderer.resetFrameIndex();
-                    }
-
-                    ImGui::Spacing();
-
-                    if (!node->getSpheres().empty()) {
-                        ImGui::Text("Spheres");
-                        ImGui::Separator();
-                        for (size_t i = 0; i < node->getSpheres().size(); i++) {
-                            ImGui::PushID(static_cast<int32_t>(i));
-                            std::string sphereLabel =
-                                "Sphere " + std::to_string(i + 1);
-                            if (ImGui::CollapsingHeader(
-                                    sphereLabel.c_str(),
-                                    ImGuiTreeNodeFlags_DefaultOpen)) {
-                                if (ImGui::DragFloat3(
-                                        "Center",
-                                        const_cast<float *>(
-                                            &node->getSpheres()[i].center[0]),
-                                        0.01f))
-                                    m_renderer.resetFrameIndex();
-                                if (ImGui::DragFloat(
-                                        "Radius",
-                                        const_cast<float *>(
-                                            &node->getSpheres()[i].radius),
-                                        0.01f))
-                                    m_renderer.resetFrameIndex();
-                                if (ImGui::Combo(
-                                        "Material",
-                                        const_cast<int *>(&node->getSpheres()[i]
-                                                               .materialIndex),
-                                        "Material 1\0Material 2\0Material "
-                                        "3\0\0"))
-                                    m_renderer.resetFrameIndex();
-                            }
-                            ImGui::PopID();
-                        }
-                    }
-
+                if (opened) {
                     for (const auto &child : node->getChildren()) {
                         drawNode(child);
                     }
-                    ImGui::Unindent();
                     ImGui::TreePop();
                 }
                 ImGui::PopID();
             };
 
         drawNode(m_scene.rootNode);
+        
+        // Deselect if clicking on empty space in Hierarchy window
+        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
+            m_selectedNode = nullptr;
+        }
+        
+        ImGui::End();
+
+        ImGui::Begin("Inspector");
+        if (m_selectedNode) {
+            ImGui::Text("%s", m_selectedNode->getName().c_str());
+            ImGui::Separator();
+
+            if (ImGui::DragFloat3(
+                    "Position",
+                    const_cast<float *>(&m_selectedNode->getPosition()[0]),
+                    0.01f)) {
+                m_selectedNode->setPosition(m_selectedNode->getPosition());
+                m_renderer.resetFrameIndex();
+            }
+            if (ImGui::DragFloat3(
+                    "Rotation",
+                    const_cast<float *>(&m_selectedNode->getRotation()[0]),
+                    0.01f)) {
+                m_selectedNode->setRotation(m_selectedNode->getRotation());
+                m_renderer.resetFrameIndex();
+            }
+            if (ImGui::DragFloat3(
+                    "Scale", const_cast<float *>(&m_selectedNode->getScale()[0]),
+                    0.01f, 0.0f, FLT_MAX)) {
+                m_selectedNode->setScale(m_selectedNode->getScale());
+                m_renderer.resetFrameIndex();
+            }
+
+            ImGui::Spacing();
+            if (ImGui::Button("Remove Node")) {
+                m_scene.rootNode->removeChild(m_selectedNode);
+                m_selectedNode = nullptr;
+                m_renderer.resetFrameIndex();
+            }
+
+            ImGui::Spacing();
+
+            if (!m_selectedNode && !m_selectedNode->getSpheres().empty()) { // Check if node still exists (it might have been deleted above, though m_selectedNode is set to null so this check is safe but redundant if null)
+                 // Actually if we set m_selectedNode to nullptr above, we shouldn't access it.
+                 // But the if block above sets it to nullptr.
+                 // Let's restructure to avoid accessing nullptr.
+            }
+            
+            if (m_selectedNode && !m_selectedNode->getSpheres().empty()) {
+                ImGui::Text("Spheres");
+                ImGui::Separator();
+                for (size_t i = 0; i < m_selectedNode->getSpheres().size(); i++) {
+                    ImGui::PushID(static_cast<int32_t>(i));
+                    std::string sphereLabel =
+                        "Sphere " + std::to_string(i + 1);
+                    if (ImGui::CollapsingHeader(
+                            sphereLabel.c_str(),
+                            ImGuiTreeNodeFlags_DefaultOpen)) {
+                        if (ImGui::DragFloat3(
+                                "Center",
+                                const_cast<float *>(
+                                    &m_selectedNode->getSpheres()[i].center[0]),
+                                0.01f))
+                            m_renderer.resetFrameIndex();
+                        if (ImGui::DragFloat(
+                                "Radius",
+                                const_cast<float *>(
+                                    &m_selectedNode->getSpheres()[i].radius),
+                                0.01f))
+                            m_renderer.resetFrameIndex();
+                        if (ImGui::Combo(
+                                "Material",
+                                const_cast<int *>(&m_selectedNode->getSpheres()[i]
+                                                       .materialIndex),
+                                "Material 1\0Material 2\0Material "
+                                "3\0\0"))
+                            m_renderer.resetFrameIndex();
+                    }
+                    ImGui::PopID();
+                }
+            }
+        }
         ImGui::End();
 
         ImGui::Begin("Material settings");
@@ -251,6 +275,7 @@ class Ataraxia final : public Layer {
     Scene m_scene;
     Renderer m_renderer;
     Camera m_camera;
+    std::shared_ptr<SceneNode> m_selectedNode = nullptr;
 
     uint32_t m_viewportWidth = 0, m_viewportHeight = 0;
     float m_lastRenderTime = 0.0f;
@@ -334,9 +359,9 @@ Application *createApplication(int argc, char **argv) {
 
         if (ImGui::BeginPopupModal("About", nullptr,
                                    ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Ataraxia Alpha");
-            ImGui::Text("A simple Path-tracing engine");
-            ImGui::Text("Created by nesk");
+            ImGui::Text("Ataraxia");
+            ImGui::Text("The Path-tracing engine");
+            ImGui::Text("source: https://github.com/1neskk/Ataraxia");
             ImGui::Separator();
             ImGui::Text("Press ESC to close");
             if (ImGui::IsKeyPressed(ImGuiKey_Escape))
