@@ -1,15 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 project(Engine CUDA CXX)
 
-find_package(Vulkan REQUIRED)
-
 set(CMAKE_CUDA_STANDARD 20)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_75 --expt-relaxed-constexpr -use_fast_math")
-enable_language(CUDA)
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -expt-relaxed-constexpr -use_fast_math")
 set(CMAKE_CUDA_ARCHITECTURES 75)
 
 include(FetchContent)
-find_package(CUDA REQUIRED)
 find_package(Vulkan REQUIRED)
 
 FetchContent_Declare(
@@ -18,8 +14,6 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(googletest)
-
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -expt-relaxed-constexpr -use_fast_math")
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/glm)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty/imgui)
