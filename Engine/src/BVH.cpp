@@ -1,8 +1,8 @@
 #include "BVH.h"
+
 #include <algorithm>
 
-void BVH::build(const std::vector<Sphere>& spheres)
-{
+void BVH::build(const std::vector<Sphere> &spheres) {
     m_spheres = &spheres;
     if (spheres.empty())
         return;
@@ -11,7 +11,7 @@ void BVH::build(const std::vector<Sphere>& spheres)
     m_sphereIndices.resize(spheres.size());
     for (size_t i = 0; i < spheres.size(); i++) m_sphereIndices[i] = i;
 
-    BVHNode& root = m_nodes[0];
+    BVHNode &root = m_nodes[0];
     root.leftFirst = 0;
     root.count = spheres.size();
     m_nodesUsed = 1;
@@ -20,25 +20,24 @@ void BVH::build(const std::vector<Sphere>& spheres)
     subdivide(0);
 }
 
-void BVH::updateNodeBounds(uint32_t nodeIdx)
-{
-    BVHNode& node = m_nodes[nodeIdx];
+void BVH::updateNodeBounds(uint32_t nodeIdx) {
+    BVHNode &node = m_nodes[nodeIdx];
     node.aabbMin = glm::vec3(1e30f);
     node.aabbMax = glm::vec3(-1e30f);
 
-    for (uint32_t i = 0; i < node.count; i++)
-    {
+    for (uint32_t i = 0; i < node.count; i++) {
         uint32_t sphereIdx = m_sphereIndices[node.leftFirst + i];
-        const Sphere& sphere = (*m_spheres)[sphereIdx];
-        
-        node.aabbMin = glm::min(node.aabbMin, sphere.center - glm::vec3(sphere.radius));
-        node.aabbMax = glm::max(node.aabbMax, sphere.center + glm::vec3(sphere.radius));
+        const Sphere &sphere = (*m_spheres)[sphereIdx];
+
+        node.aabbMin =
+            glm::min(node.aabbMin, sphere.center - glm::vec3(sphere.radius));
+        node.aabbMax =
+            glm::max(node.aabbMax, sphere.center + glm::vec3(sphere.radius));
     }
 }
 
-void BVH::subdivide(uint32_t nodeIdx)
-{
-    BVHNode& node = m_nodes[nodeIdx];
+void BVH::subdivide(uint32_t nodeIdx) {
+    BVHNode &node = m_nodes[nodeIdx];
 
     if (node.count <= 2) return;
 
@@ -52,8 +51,7 @@ void BVH::subdivide(uint32_t nodeIdx)
     int i = node.leftFirst;
     int j = i + node.count - 1;
 
-    while (i <= j)
-    {
+    while (i <= j) {
         if ((*m_spheres)[m_sphereIndices[i]].center[axis] < splitPos)
             i++;
         else

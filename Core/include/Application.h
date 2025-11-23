@@ -1,79 +1,73 @@
 #pragma once
 
+#include <functional>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
-#include <functional>
 
-#include "imgui.h"
 #include "GLFW/glfw3.h"
+#include "imgui.h"
 #include "vulkan/vulkan.h"
 
-class Layer
-{
-public:
+class Layer {
+   public:
     virtual ~Layer() = default;
 
     virtual void onAttach() {}
     virtual void onDetach() {}
 
     virtual void onUpdate(float ts) {}
-    virtual void onGuiRender() {}
+    virtual void onRender() {}
 };
 
 void checkVkResult(VkResult result);
 
 struct GLFWwindow;
 
-struct Specs
-{
+struct Specs {
     std::string name = "Vulkan Application";
     int width = 1600, height = 900;
-	int windowPosX = 0, windowPosY = 300;
+    int windowPosX = 0, windowPosY = 300;
 };
 
-class Application
-{
-public:
-    Application(const Specs& specs = Specs());
+class Application {
+   public:
+    Application(const Specs &specs = Specs());
     ~Application();
 
-    static Application& get();
+    static Application &get();
 
     void run();
-    void setMenubarCallback(const std::function<void()>& callback) { m_menubarCallback = callback; }
+    void setMenubarCallback(const std::function<void()> &callback) {
+        m_menubarCallback = callback;
+    }
 
-    template<typename T>
-    void pushLayer()
-    {
-        static_assert(std::is_base_of<Layer, T>::value, "T must derive from Layer");
+    template <typename T>
+    void pushLayer() {
+        static_assert(std::is_base_of<Layer, T>::value,
+                      "T must derive from Layer");
         m_layers.emplace_back(std::make_shared<T>())->onAttach();
     }
 
-    void pushLayer(const std::shared_ptr<Layer>& layer)
-    {
+    void pushLayer(const std::shared_ptr<Layer> &layer) {
         m_layers.emplace_back(layer);
         layer->onAttach();
     }
 
-	template<typename T>
-	T* getLayer()
-    {
-		for (const auto& layer : m_layers)
-		{
-			if (typeid(*layer.get()) == typeid(T))
-				return static_cast<T*>(layer.get());
-		}
-		return nullptr;
+    template <typename T>
+    T *getLayer() {
+        for (const auto &layer : m_layers) {
+            if (typeid(*layer.get()) == typeid(T))
+                return static_cast<T *>(layer.get());
+        }
+        return nullptr;
     }
 
-	void popLayer()
-    {
-		if (!m_layers.empty())
-		{
-			m_layers.back()->onDetach();
-			m_layers.pop_back();
-		}
+    void popLayer() {
+        if (!m_layers.empty()) {
+            m_layers.back()->onDetach();
+            m_layers.pop_back();
+        }
     }
 
     void close();
@@ -83,32 +77,33 @@ public:
     void toggleVSync();
     bool isVSyncEnabled() const { return m_vsyncEnabled; }
 
-    GLFWwindow* getWindow() { return m_window; }
+    GLFWwindow *getWindow() { return m_window; }
 
     static VkInstance getInstance();
     static VkPhysicalDevice getPhysicalDevice();
     static VkDevice getDevice();
 
     static VkCommandBuffer beginSingleTimeCommands();
-    static VkCommandBuffer submitSingleTimeCommands(VkCommandBuffer commandBuffer);
+    static VkCommandBuffer submitSingleTimeCommands(
+        VkCommandBuffer commandBuffer);
 
     static VkCommandBuffer getCommandBuffer(bool begin);
     static void flushCommandBuffer(VkCommandBuffer commandBuffer);
 
-    static void submitResourceFree(std::function<void()>&& func);
+    static void submitResourceFree(std::function<void()> &&func);
 
-private:
+   private:
     void init();
     void shutdown();
 
-private:
+   private:
     Specs m_specs;
-    GLFWwindow* m_window = nullptr;
+    GLFWwindow *m_window = nullptr;
     bool m_running = true;
     bool m_vsyncEnabled = true;
     bool m_fullscreen = true;
-    GLFWmonitor* m_monitor = nullptr;
-    const GLFWvidmode* m_videoMode = nullptr;
+    GLFWmonitor *m_monitor = nullptr;
+    const GLFWvidmode *m_videoMode = nullptr;
 
     float m_timeStep = 0.0f;
     float m_frameTime = 0.0f;
@@ -118,4 +113,4 @@ private:
     std::function<void()> m_menubarCallback;
 };
 
-Application* createApplication(int argc, char** argv);
+Application *createApplication(int argc, char **argv);
